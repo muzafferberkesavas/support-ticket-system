@@ -15,10 +15,18 @@ const envSchema = z.object({
   REDIS_URL: z.string().default('redis://redis:6379'),
   SMTP_HOST: z.string().default('mailpit'),
   SMTP_PORT: z.coerce.number().default(1025),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_SECURE: z
+    .string()
+    .optional()
+    .transform((v) => v === 'true' || v === '1'),
   MAIL_FROM: z.string().default('Destek Merkezi <no-reply@support.local>'),
   APP_URL: z.string().default('http://localhost:5173'),
   UPLOAD_DIR: z.string().default('/app/uploads'),
   MAX_UPLOAD_MB: z.coerce.number().default(10),
+  // Worker: cron schedule for the daily digest job (default 08:00 every day).
+  DIGEST_CRON: z.string().default('0 8 * * *'),
 });
 
 const parsed = envSchema.safeParse(process.env);

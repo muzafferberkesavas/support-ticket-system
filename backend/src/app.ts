@@ -12,6 +12,7 @@ import attachmentRoutes from './routes/attachment.routes';
 import cannedRoutes from './routes/canned.routes';
 import dashboardRoutes from './routes/dashboard.routes';
 import slaRoutes from './routes/sla.routes';
+import jobsRoutes from './routes/jobs.routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
 export function createApp() {
@@ -44,6 +45,7 @@ export function createApp() {
   app.use('/canned', cannedRoutes);
   app.use('/dashboard', dashboardRoutes);
   app.use('/sla', slaRoutes);
+  app.use('/jobs', jobsRoutes);
 
   // Fallbacks
   app.use(notFound);

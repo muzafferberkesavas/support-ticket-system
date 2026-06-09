@@ -8,6 +8,7 @@ import Skeleton from 'primevue/skeleton';
 import Message from 'primevue/message';
 import { useToast } from 'primevue/usetoast';
 import { slaService, type SlaTargets } from '@/services/sla.service';
+import { jobsService } from '@/services/jobs.service';
 import { extractErrorMessage } from '@/services/api';
 import PriorityTag from '@/components/PriorityTag.vue';
 import type { Priority } from '@/types';
@@ -46,6 +47,19 @@ async function save() {
   }
 }
 
+const digestBusy = ref(false);
+async function runDigest() {
+  digestBusy.value = true;
+  try {
+    await jobsService.runDigest();
+    toast.add({ severity: 'success', summary: t('settings.digestQueued'), life: 4000 });
+  } catch (err) {
+    toast.add({ severity: 'error', summary: t('errors.generic'), detail: extractErrorMessage(err), life: 4000 });
+  } finally {
+    digestBusy.value = false;
+  }
+}
+
 onMounted(load);
 </script>
 
@@ -78,6 +92,21 @@ onMounted(load);
       </div>
 
       <Button :label="t('settings.save')" icon="pi pi-check" :loading="saving" style="margin-top: 1.25rem" @click="save" />
+    </template>
+  </Card>
+
+  <Card style="max-width: 560px; margin-top: 1.25rem">
+    <template #title>{{ t('settings.jobsTitle') }}</template>
+    <template #content>
+      <p class="muted" style="margin-top: -0.4rem">{{ t('settings.jobsSubtitle') }}</p>
+      <Button
+        :label="t('settings.runDigest')"
+        icon="pi pi-send"
+        outlined
+        :loading="digestBusy"
+        style="margin-top: 0.5rem"
+        @click="runDigest"
+      />
     </template>
   </Card>
 </template>

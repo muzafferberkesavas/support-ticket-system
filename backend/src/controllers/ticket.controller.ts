@@ -18,7 +18,7 @@ import { withSla } from '../services/sla';
 import { audit, getTicketActivity } from '../services/audit';
 import { pickLeastLoadedAgent } from '../services/autoAssign';
 import { estimateForTicket } from '../services/estimate';
-import { sendReplyEmail } from '../services/mailer';
+import { enqueueReplyEmail } from '../queue';
 import { priorityEnum } from '../schemas';
 
 function actorName(user: { fullName?: string | null; email: string }): string {
@@ -384,7 +384,14 @@ export async function addReply(req: Request, res: Response): Promise<void> {
           select: { email: true },
         });
         if (requester) {
-          void sendReplyEmail(requester.email, ticket.id, ticket.subject, message, author);
+          // Hand off to the worker via Redis (Bull) — no need to block the reply.
+          void enqueueReplyEmail({
+            to: requester.email,
+            ticketId: ticket.id,
+            ticketSubject: ticket.subject,
+            replyMessage: message,
+            authorName: author,
+          });
         }
       }
     } else {

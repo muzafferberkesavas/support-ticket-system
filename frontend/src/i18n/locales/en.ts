@@ -377,6 +377,10 @@ export default {
     resolution: 'Resolution (min)',
     save: 'Save',
     saved: 'SLA targets updated.',
+    jobsTitle: 'Background Jobs (Worker)',
+    jobsSubtitle: 'A worker service running on Bull + Redis. The daily digest email is sent automatically each day; you can trigger it now below.',
+    runDigest: 'Send daily digest now',
+    digestQueued: 'Digest job queued; the worker is sending it (Mailpit).',
   },
   cmd: {
     placeholder: 'Search tickets or jump to a page...',

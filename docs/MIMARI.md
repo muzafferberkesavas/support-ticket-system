@@ -21,12 +21,11 @@ kod tabanına hızlıca hâkim olmanı sağlamaktır.
 
 ## 1. Genel Bakış
 
-Üç ana parça ve iki yardımcı servisten oluşur:
-
 - **Frontend** (Vue 3): Tarayıcıda çalışan tek sayfa uygulaması (SPA).
 - **Backend** (Express): REST API + WebSocket sunucusu.
+- **Worker** (Bull): Backend/frontend'den bağımsız servis; Redis kuyruğundan iş alıp arka planda çalıştırır (e-posta gönderimi, günlük özet cron'u). Backend ile yalnızca Redis üzerinden haberleşir.
 - **PostgreSQL**: Kalıcı veri.
-- **Redis**: Socket.IO'nun çok-instance yayını için pub/sub.
+- **Redis**: Socket.IO pub/sub **ve** Bull iş kuyruğu (backend ↔ worker).
 - **Mailpit**: Geliştirmede gönderilen e-postaları yakalayan sahte SMTP sunucusu.
 
 Hepsi `docker-compose.yml` ile tanımlanır ve tek komutla ayağa kalkar.

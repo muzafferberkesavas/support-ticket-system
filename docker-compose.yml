@@ -57,10 +57,14 @@ services:
       REDIS_URL: ${REDIS_URL}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_SECURE: ${SMTP_SECURE}
       MAIL_FROM: ${MAIL_FROM}
       APP_URL: ${APP_URL}
       UPLOAD_DIR: /app/uploads
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB}
+      DIGEST_CRON: ${DIGEST_CRON}
     volumes:
       - uploads:/app/uploads
     ports:
@@ -78,6 +82,32 @@ services:
       timeout: 5s
       retries: 5
       start_period: 25s
+
+  # Independent background worker (Bull + Redis). Same image as the backend,
+  # but runs the worker entrypoint instead of the API. Communicates with the
+  # backend purely over Redis (job queue) — no HTTP between them.
+  worker:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    command: ["node", "dist/worker.js"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_URL: ${REDIS_URL}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_SECURE: ${SMTP_SECURE}
+      MAIL_FROM: ${MAIL_FROM}
+      APP_URL: ${APP_URL}
+      DIGEST_CRON: ${DIGEST_CRON}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   frontend:
     build:

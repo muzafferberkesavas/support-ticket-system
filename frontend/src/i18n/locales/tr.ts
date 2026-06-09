@@ -377,6 +377,10 @@ export default {
     resolution: 'Çözüm (dk)',
     save: 'Kaydet',
     saved: 'SLA hedefleri güncellendi.',
+    jobsTitle: 'Arka Plan İşleri (Worker)',
+    jobsSubtitle: 'Bull + Redis ile çalışan worker servisi. Günlük özet maili her gün otomatik gönderilir; aşağıdan hemen tetikleyebilirsiniz.',
+    runDigest: 'Günlük özeti şimdi gönder',
+    digestQueued: 'Günlük özet işi kuyruğa alındı; worker gönderiyor (Mailpit).',
   },
   cmd: {
     placeholder: 'Talep ara veya bir sayfaya git...',

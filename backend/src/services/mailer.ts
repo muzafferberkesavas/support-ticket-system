@@ -1,11 +1,14 @@
 import nodemailer from 'nodemailer';
 import { env } from '../env';
 
-// Mailpit (dev) accepts any/no auth on plain SMTP; for real SMTP add auth via env.
+// Mailpit (dev) accepts any/no auth on plain SMTP. For a real provider
+// (e.g. Gmail) set SMTP_USER/SMTP_PASS (and SMTP_PORT=587, SMTP_SECURE=false,
+// or SMTP_PORT=465 + SMTP_SECURE=true) — auth kicks in automatically.
 const transporter = nodemailer.createTransport({
   host: env.SMTP_HOST,
   port: env.SMTP_PORT,
-  secure: false,
+  secure: env.SMTP_SECURE || env.SMTP_PORT === 465,
+  auth: env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASS } : undefined,
   tls: { rejectUnauthorized: false },
 });
 
@@ -68,6 +71,33 @@ export async function sendReplyEmail(
      <p style="margin:18px 0">${btn(env.APP_URL + '/tickets/' + ticketId, 'Talebi Görüntüle')}</p>`,
   );
   await send(to, `Destek Merkezi — "${ticketSubject}" talebinize yanıt`, html);
+}
+
+export interface DigestStats {
+  open: number;
+  overdue: number;
+  unassigned: number;
+}
+
+export async function sendDigestEmail(
+  to: string,
+  name: string | null,
+  stats: DigestStats,
+): Promise<void> {
+  const row = (label: string, value: number, color = '#1f2433') =>
+    `<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;color:#374151">${label}</td>
+     <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:700;color:${color}">${value}</td></tr>`;
+  const html = layout(
+    `Günlük özet${name ? ', ' + name : ''}`,
+    `<p style="color:#374151;line-height:1.6">İşte bugünün durumu:</p>
+     <table style="width:100%;border-collapse:collapse;margin:14px 0;background:#f9fafb;border-radius:8px;overflow:hidden">
+       ${row('Açık (size atanan)', stats.open)}
+       ${row('SLA aşan / riskli', stats.overdue, '#dc2626')}
+       ${row('Atanmamış (departmanınız)', stats.unassigned, '#d97706')}
+     </table>
+     <p style="margin:18px 0">${btn(env.APP_URL + '/dashboard', 'Panele Git')}</p>`,
+  );
+  await send(to, 'Destek Merkezi — Günlük Özet', html);
 }
 
 export async function sendResetEmail(to: string, resetLink: string): Promise<void> {

@@ -40,14 +40,16 @@ Kullanıcıların destek talebi oluşturup takip edebildiği, personelin bu tale
 | --- | --- |
 | Frontend | Vue 3, TypeScript, Vite, Pinia, Vue Router, PrimeVue, vue-i18n, Chart.js, Socket.IO Client, Axios |
 | Backend | Node.js, Express, TypeScript, Prisma ORM, Zod, JWT (jsonwebtoken), bcrypt, Socket.IO, Multer, Nodemailer |
+| Worker | Node.js, **Bull** (Redis tabanlı iş kuyruğu), cron (tekrarlayan işler) |
 | Veritabanı | PostgreSQL 16 |
-| Diğer servisler | Redis 7 (Socket.IO adapter), Mailpit (geliştirme SMTP sunucusu) |
+| Diğer servisler | Redis 7 (Socket.IO adapter + Bull kuyruğu), Mailpit (geliştirme SMTP sunucusu) |
 | Container | Docker, Docker Compose, nginx (frontend statik sunum) |
 
 ### Yapı
 
 - **Frontend** — Vue 3 + TypeScript SPA. Vite ile derlenip nginx üzerinden sunulur. Pinia ile durum yönetimi, Vue Router ile yönlendirme ve route guard'lar, vue-i18n ile TR/EN dil desteği, PrimeVue ile arayüz bileşenleri kullanılır. API istekleri Axios, gerçek zamanlı iletişim Socket.IO Client ile yapılır.
 - **Backend** — Express + TypeScript REST API. Katmanlı mimari: `routes -> controllers -> services -> prisma`. Kimlik doğrulama JWT, doğrulama Zod ile yapılır. Socket.IO aynı HTTP sunucusuna bağlanır.
+- **Worker** — Backend ve frontend'den **bağımsız** bir servis. Bull (Redis) üzerinden iş kuyruğunu dinler; uzun süren / kullanıcıyı bekletmemesi gereken işleri (e-posta gönderimi, günlük özet) arka planda çalıştırır. Backend ile **yalnızca Redis üzerinden** haberleşir (aralarında HTTP yoktur). Cron ile tekrarlayan işleri (günlük özet) zamanlar.
 - **Veritabanı** — PostgreSQL. Şema ve migration'lar Prisma ORM ile yönetilir; backend PostgreSQL'e Docker Compose servis adı (`postgres`) üzerinden bağlanır.
 
 ## Özellikler
@@ -78,8 +80,8 @@ Ek olarak geliştirilen özellikler:
 
 ```
 .
-├── docker-compose.yml          postgres, redis, mailpit, backend, frontend
-├── .env.example                ortam değişkenleri şablonu
+├── docker-compose.yml          postgres, redis, mailpit, backend, worker, frontend
+├── .env                        ortam değişkenleri (repoda, dev varsayılanları)
 ├── README.md
 │
 ├── backend/                    Node.js + Express + TypeScript
@@ -89,11 +91,13 @@ Ek olarak geliştirilen özellikler:
 │   │   └── migrations/          SQL migration'ları
 │   └── src/
 │       ├── index.ts             HTTP + Socket.IO sunucusu
+│       ├── worker.ts            Bağımsız Bull worker (e-posta + günlük özet cron)
+│       ├── queue.ts             Bull kuyruğu (backend producer / worker consumer)
 │       ├── app.ts               Express app, route bağlama
 │       ├── env.ts               Zod ile env doğrulama
 │       ├── seed.ts              admin + departman + örnek veri
 │       ├── middleware/          auth (JWT), errorHandler
-│       ├── controllers/         auth, ticket, department, user, notification, analytics, canned, attachment
+│       ├── controllers/         auth, ticket, department, user, notification, analytics, canned, attachment, sla, dashboard, jobs
 │       ├── services/            access, sla, autoAssign, estimate, audit, notifications, scheduler, mailer, upload, textAnalysis
 │       ├── realtime/socket.ts   Socket.IO (oda, JWT handshake, presence/typing)
 │       └── routes/
@@ -145,8 +149,9 @@ docker compose down -v && docker compose up --build
 | --- | --- | --- |
 | Frontend | http://localhost:5173 | Vue arayüzü |
 | Backend | http://localhost:3000 | REST API + WebSocket |
+| Worker | (port yok) | Bağımsız Bull worker; Redis üzerinden iş alır |
 | PostgreSQL | localhost:5432 | postgres / postgres |
-| Redis | localhost:6379 | Socket.IO adapter |
+| Redis | localhost:6379 | Socket.IO adapter + Bull kuyruğu |
 | Mailpit | http://localhost:8025 | Gönderilen e-postalar burada görüntülenir |
 
 ## Ortam Değişkenleri
@@ -164,11 +169,32 @@ ADMIN_PASSWORD=Admin123!
 REDIS_URL=redis://redis:6379
 SMTP_HOST=mailpit
 SMTP_PORT=1025
+SMTP_USER=                       # Mailpit için boş; gerçek SMTP için doldurun
+SMTP_PASS=
+SMTP_SECURE=false
 MAIL_FROM=Destek Merkezi <no-reply@support.local>
 APP_URL=http://localhost:5173
+DIGEST_CRON=0 8 * * *            # Worker'ın günlük özet cron'u
 MAX_UPLOAD_MB=10
 VITE_API_URL=http://localhost:3000
 ```
+
+### Gerçek SMTP (örn. Gmail) ile test
+
+Varsayılan olarak e-postalar Mailpit'e düşer. Gerçek bir SMTP sunucusuyla göndermek için
+`.env`'i şöyle değiştirin (örnek Gmail):
+
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=adresiniz@gmail.com
+SMTP_PASS=xxxx xxxx xxxx xxxx   # Gmail "Uygulama Şifresi" (App Password)
+```
+
+> Gmail'de 2 adımlı doğrulama açıkken normal şifre çalışmaz; Google hesabınızdan
+> 16 haneli bir **Uygulama Şifresi** oluşturup `SMTP_PASS`'e yazın. Değişiklik sonrası
+> `docker compose up -d --build backend worker` ile yeniden başlatın.
 
 ## Veritabanı ve Migration
 
@@ -244,10 +270,16 @@ Base URL: `http://localhost:3000`. Kimlik gerektiren uçlarda header: `Authoriza
 | POST | /tickets/:id/replies | Yanıt veya dahili not |
 | POST | /tickets/:id/attachments | Dosya yükleme (multipart) |
 | POST | /tickets/:id/csat | Memnuniyet değerlendirmesi (müşteri) |
+| POST | /tickets/:id/reopen | Kapalı talebi yeniden açma |
 | GET | /tickets/:id/activity | Aktivite/audit geçmişi |
+| GET | /tickets/tags | Görünür etiketler (filtre için) |
+| POST | /tickets/bulk | Toplu işlem (personel) |
+| GET/PUT | /sla | SLA hedeflerini görüntüle/güncelle (yönetici/admin) |
+| GET | /dashboard | Personel özet paneli |
+| POST | /jobs/digest | Günlük özet işini kuyruğa al (admin → worker) |
 | GET | /healthz | Healthcheck |
 
-Diğer: `/departments`, `/users`, `/notifications`, `/canned`, `/attachments/:id`, `/analytics`.
+Diğer: `/departments`, `/users`, `/notifications`, `/canned`, `/attachments/:id`, `/analytics`, `/auth/profile`.
 
 ### Örnek request/response
 
@@ -328,6 +360,34 @@ io('http://localhost:3000', { auth: { token } })
 ```
 
 Odalar: `user:{id}`, `dept:{id}`, `ticket:{id}`, `ticket:{id}:staff` (dahili notlar). Başlıca olaylar: `ticket:created`, `ticket:updated`, `ticket:deleted`, `ticket:reply`, `notification`, `typing`, `presence`. Çok instance'lı ölçekleme Redis adapter ile sağlanır.
+
+## Worker (Bull) ve Arka Plan İşleri
+
+Backend ve frontend'den **bağımsız** bir `worker` servisi vardır (`backend/src/worker.ts`).
+Backend ile yalnızca **Redis üzerinden** (Bull iş kuyruğu) haberleşir; aralarında HTTP yoktur.
+Amaç, kullanıcıyı bekletmemesi gereken / uzun süren işleri ana isteğin dışına taşımaktır.
+
+```
+Backend (producer)  ──>  Redis (Bull "mail" kuyruğu)  ──>  Worker (consumer)  ──>  Mailpit/SMTP
+```
+
+İş türleri (`backend/src/queue.ts`):
+
+- **`reply-email`** — Personel bir talebe yanıt verince backend bu işi kuyruğa atar; worker e-postayı
+  gönderir. Böylece yanıt isteği e-posta gönderimini beklemez.
+- **`daily-digest`** — Worker'ın başlattığı **cron** işi (`DIGEST_CRON`, varsayılan her gün 08:00).
+  Her personele açık/SLA-riskli/atanmamış talep özetini e-postayla gönderir.
+
+Test için: admin **Ayarlar** ekranındaki "Günlük özeti şimdi gönder" düğmesi (veya
+`POST /jobs/digest`) işi anında kuyruğa atar; worker işler ve mailleri Mailpit'e (`:8025`) düşürür.
+
+```bash
+# Worker loglarını izle
+docker compose logs -f worker
+
+# Worker'ı ayrıca ölçekle (birden çok tüketici)
+docker compose up -d --scale worker=3 worker
+```
 
 ## Test ve Debug
 
