@@ -180,6 +180,7 @@ export default {
       filterDepartment: 'Departmana göre filtrele',
       filterTag: 'Etikete göre filtrele',
     },
+    sortHint: 'İpucu: Birden fazla kolona göre sıralamak için ⌘/Ctrl tuşuna basılı tutup başlıklara tıklayın.',
     validation: {
       subjectMin: 'Konu en az 3 karakter olmalıdır.',
       messageMin: 'Açıklama en az 5 karakter olmalıdır.',

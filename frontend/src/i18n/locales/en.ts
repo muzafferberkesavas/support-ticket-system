@@ -180,6 +180,7 @@ export default {
       filterDepartment: 'Filter by department',
       filterTag: 'Filter by tag',
     },
+    sortHint: 'Tip: hold ⌘/Ctrl and click headers to sort by multiple columns.',
     validation: {
       subjectMin: 'Subject must be at least 3 characters.',
       messageMin: 'Description must be at least 5 characters.',

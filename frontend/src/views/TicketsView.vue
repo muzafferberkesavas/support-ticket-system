@@ -386,7 +386,11 @@ onUnmounted(() => {
     :rowsPerPageOptions="[10, 25, 50]"
     stripedRows
     removableSort
+    sortMode="multiple"
   >
+    <template #header>
+      <div class="table-hint"><i class="pi pi-info-circle" /> {{ t('tickets.sortHint') }}</div>
+    </template>
     <Column v-if="auth.isStaff" selectionMode="multiple" headerStyle="width: 3rem" :exportable="false" />
     <template #empty>
       <div class="empty-state">
@@ -503,6 +507,16 @@ onUnmounted(() => {
 .bulk-count {
   font-weight: 600;
   color: var(--text);
+}
+.table-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.table-hint i {
+  color: var(--brand);
 }
 .row-actions {
   display: flex;
