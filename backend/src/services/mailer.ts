@@ -1,24 +1,51 @@
 import nodemailer from 'nodemailer';
 import { env } from '../env';
 
-// Mailpit (dev) accepts any/no auth on plain SMTP. For a real provider
-// (e.g. Gmail) set SMTP_USER/SMTP_PASS (and SMTP_PORT=587, SMTP_SECURE=false,
-// or SMTP_PORT=465 + SMTP_SECURE=true) — auth kicks in automatically.
+// Real SMTP provider (e.g. Gmail). Set SMTP_USER/SMTP_PASS (port 587 + secure=false,
+// or 465 + secure=true). Connection pooling keeps throughput steady under load.
 const transporter = nodemailer.createTransport({
   host: env.SMTP_HOST,
   port: env.SMTP_PORT,
   secure: env.SMTP_SECURE || env.SMTP_PORT === 465,
   auth: env.SMTP_USER ? { user: env.SMTP_USER, pass: env.SMTP_PASS } : undefined,
+  pool: true,
+  maxConnections: 3,
+  maxMessages: 100,
+  connectionTimeout: 10_000,
+  greetingTimeout: 10_000,
+  socketTimeout: 20_000,
   tls: { rejectUnauthorized: false },
 });
 
+// RFC 2606 / 6761 reserved + non-routable TLDs: never deliverable over real SMTP.
+const NON_DELIVERABLE_DOMAIN = /\.(local|localhost|test|invalid|example|internal)$/i;
+
+// True if the address could plausibly receive real email (skip fake/demo addresses).
+export function isDeliverable(to: string): boolean {
+  const at = to.lastIndexOf('@');
+  if (at < 1) return false;
+  const domain = to.slice(at + 1).toLowerCase();
+  if (!domain.includes('.')) return false;
+  return !NON_DELIVERABLE_DOMAIN.test(domain);
+}
+
+export const isMailConfigured = Boolean(env.SMTP_USER && env.SMTP_PASS);
+
 async function send(to: string, subject: string, html: string): Promise<void> {
+  if (!isMailConfigured) {
+    console.log(`✉️  SMTP not configured — skipping email to ${to}`);
+    return;
+  }
+  if (!isDeliverable(to)) {
+    console.log(`✉️  Skipped non-deliverable address: ${to}`);
+    return;
+  }
   try {
     await transporter.sendMail({ from: env.MAIL_FROM, to, subject, html });
     console.log(`📧 Email sent to ${to}: ${subject}`);
   } catch (err) {
     // Never let an email failure break the request flow.
-    console.error(`⚠️  Failed to send email to ${to}:`, err);
+    console.error(`⚠️  Failed to send email to ${to}:`, err instanceof Error ? err.message : err);
   }
 }
 

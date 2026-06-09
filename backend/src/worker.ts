@@ -1,6 +1,6 @@
 import { mailQueue, scheduleDailyDigest, JOB_REPLY_EMAIL, JOB_DAILY_DIGEST, type ReplyEmailJob } from './queue';
 import { prisma } from './prisma';
-import { sendReplyEmail, sendDigestEmail, type DigestStats } from './services/mailer';
+import { sendReplyEmail, sendDigestEmail, isDeliverable, type DigestStats } from './services/mailer';
 import { computeSla, refreshSlaTargets } from './services/sla';
 
 // ── Daily digest: per-staff summary of open / overdue / unassigned work ──
@@ -37,8 +37,10 @@ async function computeDigests(): Promise<Digest[]> {
     const unassigned = openTickets.filter(
       (t) => !t.assignees.length && (u.role === 'admin' || (t.departmentId != null && myDepts.has(t.departmentId))),
     ).length;
-    // Only email staff who actually have something to act on.
+    // Only email staff who actually have something to act on — and whose
+    // address is real (skip demo/non-deliverable accounts to avoid bounces).
     if (mine.length === 0 && unassigned === 0) continue;
+    if (!isDeliverable(u.email)) continue;
     digests.push({ to: u.email, name: u.fullName, stats: { open: mine.length, overdue, unassigned } });
   }
   return digests;

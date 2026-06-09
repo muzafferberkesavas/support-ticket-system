@@ -15,9 +15,11 @@ export const JOB_REPLY_EMAIL = 'reply-email';
 export const JOB_DAILY_DIGEST = 'daily-digest';
 
 export const mailQueue = new Queue('mail', env.REDIS_URL, {
+  // Rate limit to stay well under provider sending limits (Gmail ~500/day).
+  limiter: { max: 30, duration: 60_000 },
   defaultJobOptions: {
     attempts: 3,
-    backoff: { type: 'fixed', delay: 5000 },
+    backoff: { type: 'exponential', delay: 5000 },
     removeOnComplete: 100,
     removeOnFail: 200,
   },
