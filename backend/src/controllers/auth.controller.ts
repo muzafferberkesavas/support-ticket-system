@@ -11,6 +11,7 @@ import {
   loginSchema,
   registerSchema,
   resetPasswordSchema,
+  updateProfileSchema,
 } from '../schemas';
 import { sendResetEmail } from '../services/mailer';
 
@@ -74,6 +75,13 @@ export async function me(req: Request, res: Response): Promise<void> {
   if (!user) {
     throw new AppError(404, 'User not found');
   }
+  res.json({ user: toPublicUser(user) });
+}
+
+// PATCH /auth/profile  — update own display name
+export async function updateProfile(req: Request, res: Response): Promise<void> {
+  const { fullName } = updateProfileSchema.parse(req.body);
+  const user = await prisma.user.update({ where: { id: req.user!.id }, data: { fullName } });
   res.json({ user: toPublicUser(user) });
 }
 

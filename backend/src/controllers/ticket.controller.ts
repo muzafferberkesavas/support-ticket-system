@@ -4,6 +4,7 @@ import { prisma } from '../prisma';
 import { AppError } from '../utils/AppError';
 import {
   assignTicketSchema,
+  bulkTicketSchema,
   createReplySchema,
   createTicketSchema,
   csatSchema,
@@ -98,7 +99,7 @@ function filterReplies<T extends { replies?: { isInternal: boolean }[] }>(ticket
 
 // GET /tickets — scoped by role; supports status/priority/department/assignee filters.
 export async function listTickets(req: Request, res: Response): Promise<void> {
-  const { status, priority, departmentId, assigneeId, scope, search } = listTicketsQuerySchema.parse(req.query);
+  const { status, priority, departmentId, assigneeId, scope, search, tag } = listTicketsQuerySchema.parse(req.query);
   const user = req.user as Principal;
 
   const scopeWhere = await buildTicketScope(user);
@@ -107,6 +108,7 @@ export async function listTickets(req: Request, res: Response): Promise<void> {
   if (priority) filters.push({ priority });
   if (departmentId) filters.push({ departmentId });
   if (assigneeId) filters.push({ assignees: { some: { userId: assigneeId } } });
+  if (tag) filters.push({ tags: { has: tag } });
   if (scope === 'mine') filters.push({ assignees: { some: { userId: user.id } } });
   if (scope === 'created') filters.push({ userId: user.id });
   if (scope === 'unassigned') filters.push({ assignees: { none: {} } });
@@ -165,6 +167,7 @@ export async function createTicket(req: Request, res: Response): Promise<void> {
       message: data.message,
       priority: data.priority,
       category: data.category ?? null,
+      tags: data.tags ?? [],
       departmentId: data.departmentId ?? null,
       userId: user.id,
       assignees: assigneeIds.length ? { create: assigneeIds.map((userId) => ({ userId })) } : undefined,
@@ -220,6 +223,7 @@ export async function updateTicket(req: Request, res: Response): Promise<void> {
   if (data.message !== undefined) update.message = data.message;
   if (data.priority !== undefined) update.priority = data.priority;
   if (data.category !== undefined) update.category = data.category;
+  if (data.tags !== undefined) update.tags = data.tags;
 
   // Workflow + routing fields are staff-only.
   if (staff) {
@@ -449,6 +453,75 @@ export async function submitCsat(req: Request, res: Response): Promise<void> {
 
   const full = await prisma.ticket.findUnique({ where: { id: ticket.id }, include: ticketDetailInclude });
   res.json({ ticket: serialize(filterReplies(full!, user)) });
+}
+
+// GET /tickets/tags — distinct tags within the user's scope (for filtering).
+export async function listTags(req: Request, res: Response): Promise<void> {
+  const user = req.user as Principal;
+  const scopeWhere = await buildTicketScope(user);
+  const rows = await prisma.ticket.findMany({ where: scopeWhere, select: { tags: true }, take: 5000 });
+  const set = new Set<string>();
+  rows.forEach((r) => r.tags.forEach((t) => set.add(t)));
+  res.json({ tags: [...set].sort((a, b) => a.localeCompare(b, 'tr')) });
+}
+
+// POST /tickets/bulk — apply an action to multiple tickets (staff).
+export async function bulkUpdate(req: Request, res: Response): Promise<void> {
+  const user = req.user as Principal;
+  const { ids, action, status, assigneeIds } = bulkTicketSchema.parse(req.body);
+  let updated = 0;
+  let skipped = 0;
+
+  for (const id of ids) {
+    const t = await prisma.ticket.findUnique({
+      where: { id },
+      select: { id: true, userId: true, departmentId: true, status: true },
+    });
+    if (!t || !(await canAccessTicket(user, t))) {
+      skipped += 1;
+      continue;
+    }
+
+    if (action === 'status') {
+      if (!status) {
+        skipped += 1;
+        continue;
+      }
+      await prisma.ticket.update({
+        where: { id },
+        data: { status, resolvedAt: status === 'closed' ? new Date() : null },
+      });
+      audit('ticket.status', { ticketId: id, actorId: user.id, actorName: user.email, detail: { to: status, bulk: true } });
+      emitTicketUpdated(t, []);
+      updated += 1;
+    } else if (action === 'assign') {
+      if (!assigneeIds) {
+        skipped += 1;
+        continue;
+      }
+      try {
+        await validateAssignees(assigneeIds, t.departmentId);
+      } catch {
+        skipped += 1;
+        continue;
+      }
+      await setAssignees(id, assigneeIds);
+      audit('ticket.assigned', { ticketId: id, actorId: user.id, actorName: user.email, detail: { assignees: assigneeIds, bulk: true } });
+      emitTicketUpdated(t, assigneeIds);
+      updated += 1;
+    } else if (action === 'delete') {
+      if (user.role !== 'admin' && t.userId !== user.id) {
+        skipped += 1;
+        continue;
+      }
+      await prisma.ticket.delete({ where: { id } });
+      audit('ticket.deleted', { ticketId: id, actorId: user.id, actorName: user.email, detail: { bulk: true } });
+      emitTicketDeleted(t);
+      updated += 1;
+    }
+  }
+
+  res.json({ updated, skipped });
 }
 
 // GET /tickets/estimate?priority=&departmentId= — estimated response/resolution time.

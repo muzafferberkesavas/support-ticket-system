@@ -35,7 +35,7 @@ async function submit() {
   serverError.value = '';
   try {
     await auth.login(form.email.trim(), form.password);
-    router.push((route.query.redirect as string) || '/tickets');
+    router.push((route.query.redirect as string) || '/');
   } catch (err) {
     serverError.value = extractErrorMessage(err, t('auth.errors.loginFailed'));
   } finally {

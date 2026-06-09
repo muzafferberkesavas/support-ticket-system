@@ -14,6 +14,7 @@ import { departmentService } from '@/services/department.service';
 import { extractErrorMessage } from '@/services/api';
 import { PRIORITY_VALUES, STATUS_VALUES } from '@/constants';
 import { useDuration } from '@/composables/useDuration';
+import TagsInput from '@/components/TagsInput.vue';
 import type { Department, Priority, Status, Ticket, TicketEstimate } from '@/types';
 
 const props = defineProps<{
@@ -41,6 +42,7 @@ const form = reactive({
   priority: 'medium' as Priority,
   status: 'open' as Status,
   category: '',
+  tags: [] as string[],
   departmentId: null as string | null,
   assigneeIds: [] as string[],
 });
@@ -101,6 +103,7 @@ watch(
     form.priority = props.ticket?.priority ?? 'medium';
     form.status = props.ticket?.status ?? 'open';
     form.category = props.ticket?.category ?? '';
+    form.tags = [...(props.ticket?.tags ?? [])];
     form.departmentId = props.ticket?.departmentId ?? null;
     form.assigneeIds = props.ticket?.assignees?.map((a) => a.userId) ?? [];
   },
@@ -151,6 +154,7 @@ async function submit() {
       message: form.message.trim(),
       priority: form.priority,
       category: form.category.trim() || null,
+      tags: form.tags,
       departmentId: form.departmentId,
       assigneeIds: form.assigneeIds,
     };
@@ -216,6 +220,11 @@ async function submit() {
           <label>{{ t('tickets.fields.category') }} <span class="muted">({{ t('common.optional') }})</span></label>
           <InputText v-model="form.category" :placeholder="t('tickets.placeholders.category')" maxlength="80" />
         </div>
+      </div>
+
+      <div class="field">
+        <label>{{ t('tickets.fields.tags') }} <span class="muted">({{ t('common.optional') }})</span></label>
+        <TagsInput v-model="form.tags" :placeholder="t('tickets.placeholders.tags')" />
       </div>
 
       <div class="form-row">

@@ -151,6 +151,7 @@ model Ticket {
   priority     Priority         @default(medium)
   status       Status           @default(open)
   category     String?
+  tags         String[]         @default([])
   userId       String           @map("user_id") // requester
   user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   departmentId String?          @map("department_id") // target department (optional)

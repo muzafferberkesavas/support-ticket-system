@@ -490,6 +490,12 @@ onUnmounted(() => {
             <span v-else class="muted">—</span>
           </div>
           <div v-if="ticket.category" class="meta-row"><span class="meta-key">{{ t('tickets.fields.category') }}</span><span>{{ ticket.category }}</span></div>
+          <div v-if="ticket.tags?.length" class="meta-row" style="align-items: flex-start">
+            <span class="meta-key">{{ t('tickets.fields.tags') }}</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: flex-end">
+              <Tag v-for="tg in ticket.tags" :key="tg" :value="tg" severity="secondary" rounded />
+            </div>
+          </div>
           <div class="meta-row"><span class="meta-key">{{ t('tickets.fields.requester') }}</span><span>{{ ticket.user?.fullName || ticket.user?.email || '—' }}</span></div>
           <div class="meta-row"><span class="meta-key">{{ t('tickets.fields.createdAt') }}</span><span>{{ formatDateTime(ticket.createdAt, ui.locale) }}</span></div>
           <div class="meta-row"><span class="meta-key">{{ t('tickets.fields.updatedAt') }}</span><span>{{ formatDateTime(ticket.updatedAt, ui.locale) }}</span></div>

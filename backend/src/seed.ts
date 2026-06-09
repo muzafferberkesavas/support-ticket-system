@@ -81,6 +81,25 @@ async function seedExtras() {
     console.log('✅ Canned responses seeded');
   }
 
+  // Tag demo tickets by keyword (once).
+  if ((await prisma.ticket.count({ where: { tags: { isEmpty: false } } })) === 0) {
+    const all = await prisma.ticket.findMany({ select: { id: true, subject: true, message: true } });
+    let tagged = 0;
+    for (const t of all) {
+      const text = `${t.subject} ${t.message}`.toLocaleLowerCase('tr-TR');
+      const tags: string[] = [];
+      if (/mouse|klavye|yazıcı|toner|monitör|donanım/.test(text)) tags.push('donanım');
+      if (/vpn|bağlan|uzaktan|ağ/.test(text)) tags.push('ağ');
+      if (/outlook|e-posta|mail|senkron/.test(text)) tags.push('e-posta');
+      if (/fatura|ücret|ödeme/.test(text)) tags.push('faturalama');
+      if (tags.length) {
+        await prisma.ticket.update({ where: { id: t.id }, data: { tags } });
+        tagged += 1;
+      }
+    }
+    if (tagged) console.log(`✅ Demo tags assigned (${tagged})`);
+  }
+
   if ((await prisma.ticket.count({ where: { csatRating: { not: null } } })) === 0) {
     const closed = await prisma.ticket.findMany({ where: { status: 'closed' }, select: { id: true }, take: 30 });
     let rated = 0;

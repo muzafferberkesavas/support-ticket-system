@@ -46,6 +46,14 @@ export const useAuthStore = defineStore('auth', {
       this.persist(data);
     },
 
+    async updateProfile(fullName: string) {
+      const { data } = await api.patch<{ user: User }>('/auth/profile', { fullName });
+      if (this.user) {
+        this.user = { ...this.user, fullName: data.user.fullName };
+        localStorage.setItem(USER_KEY, JSON.stringify(this.user));
+      }
+    },
+
     async changePassword(currentPassword: string, newPassword: string) {
       await api.post('/auth/change-password', { currentPassword, newPassword });
       if (this.user) {

@@ -4,6 +4,7 @@ import type {
   AuditEntry,
   CreateTicketPayload,
   Priority,
+  Status,
   Ticket,
   TicketEstimate,
   TicketFilters,
@@ -87,5 +88,23 @@ export const ticketService = {
   async submitCsat(id: string, rating: number, comment?: string): Promise<Ticket> {
     const { data } = await api.post<{ ticket: Ticket }>(`/tickets/${id}/csat`, { rating, comment });
     return data.ticket;
+  },
+
+  async tags(): Promise<string[]> {
+    const { data } = await api.get<{ tags: string[] }>('/tickets/tags');
+    return data.tags;
+  },
+
+  async bulk(
+    ids: string[],
+    action: 'status' | 'delete' | 'assign',
+    opts: { status?: Status; assigneeIds?: string[] } = {},
+  ): Promise<{ updated: number; skipped: number }> {
+    const { data } = await api.post<{ updated: number; skipped: number }>('/tickets/bulk', {
+      ids,
+      action,
+      ...opts,
+    });
+    return data;
   },
 };

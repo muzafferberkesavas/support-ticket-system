@@ -8,6 +8,7 @@ import {
   me,
   register,
   resetPassword,
+  updateProfile,
 } from '../controllers/auth.controller';
 
 const router = Router();
@@ -17,6 +18,7 @@ router.post('/login', asyncHandler(login));
 router.post('/forgot-password', asyncHandler(forgotPassword));
 router.post('/reset-password', asyncHandler(resetPassword));
 router.get('/me', authenticate, asyncHandler(me));
+router.patch('/profile', authenticate, asyncHandler(updateProfile));
 router.post('/change-password', authenticate, asyncHandler(changePassword));
 
 export default router;

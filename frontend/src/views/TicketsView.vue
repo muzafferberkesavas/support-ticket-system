@@ -43,13 +43,25 @@ const departments = ref<Department[]>([]);
 const loading = ref(true);
 const loadError = ref('');
 
-const filters = reactive<{ status: string | null; priority: string | null; departmentId: string | null }>({
+const filters = reactive<{
+  status: string | null;
+  priority: string | null;
+  departmentId: string | null;
+  tag: string | null;
+}>({
   status: null,
   priority: null,
   departmentId: null,
+  tag: null,
 });
 const scope = ref<'all' | 'mine' | 'unassigned'>('all');
 const searchText = ref('');
+const availableTags = ref<string[]>([]);
+
+// Bulk selection
+const selectedTickets = ref<Ticket[]>([]);
+const bulkBusy = ref(false);
+const bulkStatusPick = ref<string | null>(null);
 
 const dialogVisible = ref(false);
 const editingTicket = ref<Ticket | null>(null);
@@ -89,6 +101,7 @@ async function load() {
       status: (filters.status as never) || undefined,
       priority: (filters.priority as never) || undefined,
       departmentId: filters.departmentId || undefined,
+      tag: filters.tag || undefined,
       scope: auth.isStaff && scope.value !== 'all' ? scope.value : undefined,
       search: searchText.value.trim() || undefined,
     });
@@ -113,10 +126,15 @@ async function loadDepartments() {
   }
 }
 
+async function loadTags() {
+  availableTags.value = await ticketService.tags().catch(() => []);
+}
+
 function clearFilters() {
   filters.status = null;
   filters.priority = null;
   filters.departmentId = null;
+  filters.tag = null;
   scope.value = 'all';
   searchText.value = '';
   load();
@@ -127,9 +145,55 @@ const hasActiveFilters = computed(
     filters.status ||
     filters.priority ||
     filters.departmentId ||
+    filters.tag ||
     scope.value !== 'all' ||
     searchText.value.trim(),
 );
+
+// ── Bulk actions ────────────────────────────────────────────────────
+const tagOptions = computed(() => availableTags.value.map((t) => ({ label: t, value: t })));
+
+async function bulkStatus(status: 'open' | 'in_progress' | 'closed') {
+  const ids = selectedTickets.value.map((t) => t.id);
+  if (!ids.length) return;
+  bulkBusy.value = true;
+  try {
+    const res = await ticketService.bulk(ids, 'status', { status });
+    toast.add({ severity: 'success', summary: t('bulk.done', res), life: 3000 });
+    selectedTickets.value = [];
+    await load();
+  } catch (err) {
+    toast.add({ severity: 'error', summary: t('errors.generic'), detail: extractErrorMessage(err), life: 4000 });
+  } finally {
+    bulkBusy.value = false;
+  }
+}
+
+function bulkDelete() {
+  const ids = selectedTickets.value.map((t) => t.id);
+  if (!ids.length) return;
+  confirm.require({
+    message: t('bulk.deleteConfirm', { n: ids.length }),
+    header: t('common.delete'),
+    icon: 'pi pi-exclamation-triangle',
+    rejectLabel: t('common.cancel'),
+    acceptLabel: t('common.delete'),
+    acceptClass: 'p-button-danger',
+    accept: async () => {
+      bulkBusy.value = true;
+      try {
+        const res = await ticketService.bulk(ids, 'delete');
+        toast.add({ severity: 'success', summary: t('bulk.done', res), life: 3000 });
+        selectedTickets.value = [];
+        await load();
+      } catch (err) {
+        toast.add({ severity: 'error', summary: t('errors.generic'), detail: extractErrorMessage(err), life: 4000 });
+      } finally {
+        bulkBusy.value = false;
+      }
+    },
+  });
+}
 
 // Debounced search.
 let searchTimer: number | undefined;
@@ -207,6 +271,7 @@ function scheduleReload() {
 
 onMounted(() => {
   loadDepartments();
+  loadTags();
   load();
   socket.on('ticket:created', scheduleReload);
   socket.on('ticket:updated', scheduleReload);
@@ -277,10 +342,28 @@ onUnmounted(() => {
     <Select v-model="filters.status" :options="statusOptions" optionLabel="label" optionValue="value" :placeholder="t('tickets.placeholders.filterStatus')" showClear style="min-width: 190px" @change="load" />
     <Select v-model="filters.priority" :options="priorityOptions" optionLabel="label" optionValue="value" :placeholder="t('tickets.placeholders.filterPriority')" showClear style="min-width: 190px" @change="load" />
     <Select v-if="auth.isStaff && departmentOptions.length" v-model="filters.departmentId" :options="departmentOptions" optionLabel="label" optionValue="value" :placeholder="t('tickets.placeholders.filterDepartment')" showClear style="min-width: 190px" @change="load" />
+    <Select v-if="availableTags.length" v-model="filters.tag" :options="tagOptions" optionLabel="label" optionValue="value" :placeholder="t('tickets.placeholders.filterTag')" showClear style="min-width: 170px" @change="load" />
     <Button v-if="hasActiveFilters" :label="t('common.clear')" icon="pi pi-filter-slash" text severity="secondary" @click="clearFilters" />
   </div>
 
   <Message v-if="loadError" severity="error" :closable="false" style="margin-bottom: 1rem">{{ loadError }}</Message>
+
+  <!-- Bulk action bar (staff) -->
+  <div v-if="auth.isStaff && selectedTickets.length" class="bulk-bar">
+    <span class="bulk-count">{{ t('bulk.selected', { n: selectedTickets.length }) }}</span>
+    <Select
+      v-model="bulkStatusPick"
+      :options="statusOptions"
+      optionLabel="label"
+      optionValue="value"
+      :placeholder="t('bulk.changeStatus')"
+      :disabled="bulkBusy"
+      style="min-width: 170px"
+      @update:modelValue="(v) => { if (v) { bulkStatus(v); bulkStatusPick = null; } }"
+    />
+    <Button :label="t('bulk.delete')" icon="pi pi-trash" severity="danger" outlined size="small" :loading="bulkBusy" @click="bulkDelete" />
+    <Button :label="t('bulk.clear')" text size="small" severity="secondary" @click="selectedTickets = []" />
+  </div>
 
   <!-- Skeleton while loading -->
   <div v-if="loading" class="skeleton-table">
@@ -294,6 +377,7 @@ onUnmounted(() => {
 
   <DataTable
     v-else
+    v-model:selection="selectedTickets"
     :value="tickets"
     :rowClass="rowClass"
     dataKey="id"
@@ -303,6 +387,7 @@ onUnmounted(() => {
     stripedRows
     removableSort
   >
+    <Column v-if="auth.isStaff" selectionMode="multiple" headerStyle="width: 3rem" :exportable="false" />
     <template #empty>
       <div class="empty-state">
         <i class="pi pi-inbox" />
@@ -317,6 +402,7 @@ onUnmounted(() => {
         <div class="subject-sub">
           <span v-if="data.category" class="muted">{{ data.category }}</span>
           <span v-if="data._count?.attachments" class="muted"><i class="pi pi-paperclip" /> {{ data._count.attachments }}</span>
+          <Tag v-for="tg in (data.tags || []).slice(0, 3)" :key="tg" :value="tg" severity="secondary" rounded class="list-tag" />
           <SlaBadge :ticket="data" />
         </div>
       </template>
@@ -395,9 +481,28 @@ onUnmounted(() => {
 .subject-sub {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  flex-wrap: wrap;
+  gap: 0.35rem;
   margin-top: 0.2rem;
   font-size: 0.78rem;
+}
+.list-tag {
+  font-size: 0.68rem !important;
+}
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  background: color-mix(in srgb, var(--brand) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--brand) 25%, transparent);
+  border-radius: 10px;
+  padding: 0.6rem 0.9rem;
+  margin-bottom: 0.9rem;
+}
+.bulk-count {
+  font-weight: 600;
+  color: var(--text);
 }
 .row-actions {
   display: flex;

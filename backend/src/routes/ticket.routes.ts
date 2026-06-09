@@ -6,12 +6,14 @@ import { uploadAttachments } from '../controllers/attachment.controller';
 import {
   addReply,
   assignTicket,
+  bulkUpdate,
   createTicket,
   deleteTicket,
   escalateTicket,
   getActivity,
   getEstimate,
   getTicket,
+  listTags,
   listTickets,
   submitCsat,
   updateTicket,
@@ -22,11 +24,13 @@ const router = Router();
 // All ticket routes require authentication.
 router.use(authenticate);
 
-// Static path before /:id so it isn't swallowed by the param route.
+// Static paths before /:id so they aren't swallowed by the param route.
 router.get('/estimate', asyncHandler(getEstimate));
+router.get('/tags', asyncHandler(listTags));
 
 router.get('/', asyncHandler(listTickets));
 router.post('/', asyncHandler(createTicket));
+router.post('/bulk', requireStaff, asyncHandler(bulkUpdate));
 router.get('/:id', asyncHandler(getTicket));
 router.get('/:id/activity', asyncHandler(getActivity));
 router.put('/:id', asyncHandler(updateTicket));

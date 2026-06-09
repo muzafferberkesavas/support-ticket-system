@@ -88,6 +88,7 @@ export interface Ticket {
   priority: Priority;
   status: Status;
   category?: string | null;
+  tags?: string[];
   userId: string;
   departmentId?: string | null;
   escalated?: boolean;
@@ -147,6 +148,8 @@ export interface TicketFilters {
   departmentId?: string;
   assigneeId?: string;
   scope?: 'all' | 'mine' | 'unassigned' | 'created';
+  search?: string;
+  tag?: string;
 }
 
 export interface CreateTicketPayload {
@@ -154,6 +157,7 @@ export interface CreateTicketPayload {
   message: string;
   priority: Priority;
   category?: string | null;
+  tags?: string[];
   departmentId?: string | null;
   assigneeIds?: string[];
 }
@@ -164,6 +168,14 @@ export interface UpdateTicketPayload {
   priority?: Priority;
   status?: Status;
   category?: string | null;
+  tags?: string[];
   departmentId?: string | null;
   assigneeIds?: string[];
+}
+
+export interface DashboardData {
+  counts: { myOpen: number; unassigned: number; slaRisk: number; resolvedToday: number };
+  myOpen: Ticket[];
+  slaRisk: Ticket[];
+  unassigned: Ticket[];
 }

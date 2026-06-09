@@ -32,6 +32,8 @@ export const priorityEnum = z.enum(['low', 'medium', 'high']);
 export const statusEnum = z.enum(['open', 'in_progress', 'closed']);
 
 // ── Tickets ─────────────────────────────────────────────────────────
+const tagsSchema = z.array(z.string().trim().min(1).max(30)).max(15);
+
 export const createTicketSchema = z.object({
   subject: z.string().trim().min(3, 'Subject must be at least 3 characters').max(150),
   message: z.string().trim().min(5, 'Message must be at least 5 characters').max(5000),
@@ -39,6 +41,7 @@ export const createTicketSchema = z.object({
   category: z.string().trim().max(80).optional(),
   departmentId: z.string().uuid().optional().nullable(),
   assigneeIds: z.array(z.string().uuid()).max(20).optional(),
+  tags: tagsSchema.optional(),
 });
 
 export const updateTicketSchema = z
@@ -50,10 +53,22 @@ export const updateTicketSchema = z
     category: z.string().trim().max(80).optional().nullable(),
     departmentId: z.string().uuid().optional().nullable(),
     assigneeIds: z.array(z.string().uuid()).max(20).optional(),
+    tags: tagsSchema.optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field must be provided',
   });
+
+export const bulkTicketSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(200),
+  action: z.enum(['status', 'delete', 'assign']),
+  status: statusEnum.optional(),
+  assigneeIds: z.array(z.string().uuid()).max(20).optional(),
+});
+
+export const updateProfileSchema = z.object({
+  fullName: z.string().trim().min(2, 'Name must be at least 2 characters').max(120).nullable(),
+});
 
 export const listTicketsQuerySchema = z.object({
   status: statusEnum.optional(),
@@ -62,6 +77,7 @@ export const listTicketsQuerySchema = z.object({
   assigneeId: z.string().uuid().optional(),
   scope: z.enum(['all', 'mine', 'unassigned', 'created']).optional(),
   search: z.string().trim().max(120).optional(),
+  tag: z.string().trim().max(30).optional(),
 });
 
 export const createReplySchema = z.object({

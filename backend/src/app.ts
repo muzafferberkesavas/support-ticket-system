@@ -10,6 +10,7 @@ import notificationRoutes from './routes/notification.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import attachmentRoutes from './routes/attachment.routes';
 import cannedRoutes from './routes/canned.routes';
+import dashboardRoutes from './routes/dashboard.routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
 export function createApp() {
@@ -40,6 +41,7 @@ export function createApp() {
   app.use('/analytics', analyticsRoutes);
   app.use('/attachments', attachmentRoutes);
   app.use('/canned', cannedRoutes);
+  app.use('/dashboard', dashboardRoutes);
 
   // Fallbacks
   app.use(notFound);

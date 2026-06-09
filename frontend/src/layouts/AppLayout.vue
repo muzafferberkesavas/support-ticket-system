@@ -48,6 +48,7 @@ interface NavLink {
 }
 
 const mainLinks = computed<NavLink[]>(() => [
+  { key: 'dashboard', label: t('dashboard.title'), icon: 'pi pi-th-large', to: '/dashboard', show: auth.isStaff },
   { key: 'tickets', label: t('nav.tickets'), icon: 'pi pi-ticket', to: '/tickets', show: true },
   {
     key: 'notifications',
@@ -88,6 +89,12 @@ function go(to: string) {
 }
 
 const userMenuItems = computed(() => [
+  {
+    label: t('profile.title'),
+    icon: 'pi pi-user',
+    command: () => router.push('/profile'),
+  },
+  { separator: true },
   {
     label: ui.isDark ? t('theme.light') : t('theme.dark'),
     icon: ui.isDark ? 'pi pi-sun' : 'pi pi-moon',

@@ -2,7 +2,19 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth';
 
 const routes: RouteRecordRaw[] = [
-  { path: '/', redirect: '/tickets' },
+  { path: '/', redirect: () => (useAuthStore().isStaff ? '/dashboard' : '/tickets') },
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: () => import('@/views/DashboardView.vue'),
+    meta: { requiresAuth: true, requiresStaff: true },
+  },
+  {
+    path: '/profile',
+    name: 'profile',
+    component: () => import('@/views/ProfileView.vue'),
+    meta: { requiresAuth: true },
+  },
   {
     path: '/login',
     name: 'login',
@@ -98,6 +110,9 @@ router.beforeEach((to) => {
     return { name: 'tickets' };
   }
   if (to.meta.requiresManager && !auth.isManager) {
+    return { name: 'tickets' };
+  }
+  if (to.meta.requiresStaff && !auth.isStaff) {
     return { name: 'tickets' };
   }
   if (to.meta.guestOnly && auth.isAuthenticated) {
