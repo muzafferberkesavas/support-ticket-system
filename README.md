@@ -12,6 +12,8 @@ docker compose up --build
 
 Frontend: http://localhost:5173 — Backend: http://localhost:3000
 
+> Kod yapısını ve mimariyi ayrıntılı anlatan teknik rehber: [docs/MIMARI.md](docs/MIMARI.md)
+
 ## İçindekiler
 
 - [Genel Bilgi](#genel-bilgi)
