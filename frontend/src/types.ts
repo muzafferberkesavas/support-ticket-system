@@ -1,0 +1,169 @@
+export type Role = 'user' | 'agent' | 'team_lead' | 'admin';
+export type Priority = 'low' | 'medium' | 'high';
+export type Status = 'open' | 'in_progress' | 'closed';
+
+export interface User {
+  id: string;
+  email: string;
+  role: Role;
+  fullName?: string | null;
+  mustChangePassword?: boolean;
+  createdAt?: string;
+  memberships?: { department: { id: string; name: string } }[];
+  _count?: { tickets: number; assignments: number };
+}
+
+export type NotificationType = 'reply' | 'created' | 'assigned' | 'status';
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  ticketId: string | null;
+  ticketSubject: string;
+  actor?: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+export type PublicUser = Pick<User, 'id' | 'email' | 'role' | 'fullName'>;
+
+export interface DepartmentMember {
+  id: string;
+  userId: string;
+  departmentId: string;
+  user: PublicUser;
+}
+
+export interface Department {
+  id: string;
+  name: string;
+  description?: string | null;
+  createdAt: string;
+  members?: DepartmentMember[];
+  _count?: { tickets: number; members: number };
+}
+
+export interface TicketAssignee {
+  id: string;
+  ticketId: string;
+  userId: string;
+  user: PublicUser;
+}
+
+export interface Attachment {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  uploaderId: string | null;
+  createdAt: string;
+}
+
+export interface TicketReply {
+  id: string;
+  ticketId: string;
+  authorId: string;
+  message: string;
+  isInternal: boolean;
+  createdAt: string;
+  author: PublicUser;
+}
+
+export interface SlaInfo {
+  responseTargetMinutes: number;
+  resolutionTargetMinutes: number;
+  responseDueAt: string;
+  resolutionDueAt: string;
+  responseOverdue: boolean;
+  resolutionOverdue: boolean;
+  breached: boolean;
+  ageMinutes: number;
+  resolutionRemainingMinutes: number | null;
+}
+
+export interface Ticket {
+  id: string;
+  subject: string;
+  message: string;
+  priority: Priority;
+  status: Status;
+  category?: string | null;
+  userId: string;
+  departmentId?: string | null;
+  escalated?: boolean;
+  escalatedAt?: string | null;
+  csatRating?: number | null;
+  csatComment?: string | null;
+  csatAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  firstResponseAt?: string | null;
+  resolvedAt?: string | null;
+  user?: PublicUser;
+  department?: { id: string; name: string } | null;
+  assignees?: TicketAssignee[];
+  replies?: TicketReply[];
+  attachments?: Attachment[];
+  sla?: SlaInfo;
+  _count?: { replies: number; attachments?: number };
+}
+
+export interface AuditEntry {
+  id: string;
+  ticketId: string | null;
+  actorId: string | null;
+  actorName: string | null;
+  action: string;
+  detail?: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface CannedResponse {
+  id: string;
+  title: string;
+  body: string;
+  createdById: string | null;
+  departmentId: string | null;
+  createdAt: string;
+}
+
+export interface TicketEstimate {
+  estFirstResponseMinutes: number;
+  estResolutionMinutes: number;
+  slaResponseMinutes: number;
+  slaResolutionMinutes: number;
+  queueAhead: number;
+  basedOnHistory: boolean;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+export interface TicketFilters {
+  status?: Status;
+  priority?: Priority;
+  departmentId?: string;
+  assigneeId?: string;
+  scope?: 'all' | 'mine' | 'unassigned' | 'created';
+}
+
+export interface CreateTicketPayload {
+  subject: string;
+  message: string;
+  priority: Priority;
+  category?: string | null;
+  departmentId?: string | null;
+  assigneeIds?: string[];
+}
+
+export interface UpdateTicketPayload {
+  subject?: string;
+  message?: string;
+  priority?: Priority;
+  status?: Status;
+  category?: string | null;
+  departmentId?: string | null;
+  assigneeIds?: string[];
+}

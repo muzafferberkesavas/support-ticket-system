@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Env
+.env
+*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
+
+# Prisma
+backend/prisma/*.db
+
+# Docker volume mounts (local)
+pgdata/
+
+# Local file uploads (served from a Docker volume in prod)
+uploads/
