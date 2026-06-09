@@ -29,18 +29,6 @@ services:
       timeout: 3s
       retries: 10
 
-  mailpit:
-    image: axllent/mailpit:latest
-    container_name: support_mailpit
-    restart: unless-stopped
-    ports:
-      - "8025:8025" # web UI
-      - "1025:1025" # SMTP
-    environment:
-      MP_MAX_MESSAGES: 500
-      MP_SMTP_AUTH_ACCEPT_ANY: 1
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1
-
   backend:
     build:
       context: ./backend
@@ -74,8 +62,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      mailpit:
-        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/healthz || exit 1"]
       interval: 10s

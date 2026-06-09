@@ -42,7 +42,8 @@ Kullanıcıların destek talebi oluşturup takip edebildiği, personelin bu tale
 | Backend | Node.js, Express, TypeScript, Prisma ORM, Zod, JWT (jsonwebtoken), bcrypt, Socket.IO, Multer, Nodemailer |
 | Worker | Node.js, **Bull** (Redis tabanlı iş kuyruğu), cron (tekrarlayan işler) |
 | Veritabanı | PostgreSQL 16 |
-| Diğer servisler | Redis 7 (Socket.IO adapter + Bull kuyruğu), Mailpit (geliştirme SMTP sunucusu) |
+| Diğer servisler | Redis 7 (Socket.IO adapter + Bull kuyruğu) |
+| E-posta | Nodemailer ile gerçek SMTP (örn. Gmail) |
 | Container | Docker, Docker Compose, nginx (frontend statik sunum) |
 
 ### Yapı
@@ -80,7 +81,7 @@ Ek olarak geliştirilen özellikler:
 
 ```
 .
-├── docker-compose.yml          postgres, redis, mailpit, backend, worker, frontend
+├── docker-compose.yml          postgres, redis, backend, worker, frontend
 ├── .env                        ortam değişkenleri (repoda, dev varsayılanları)
 ├── README.md
 │
@@ -126,7 +127,7 @@ Ortam değişkenleri `.env` dosyası ile yönetilir. Bu dosya, geliştirme için
 docker compose up --build
 ```
 
-Bu komut postgres, redis, mailpit, backend ve frontend servislerini ayağa kaldırır.
+Bu komut postgres, redis, backend, worker ve frontend servislerini ayağa kaldırır.
 
 ### 3. Veritabanı tabloları
 
@@ -152,7 +153,10 @@ docker compose down -v && docker compose up --build
 | Worker | (port yok) | Bağımsız Bull worker; Redis üzerinden iş alır |
 | PostgreSQL | localhost:5432 | postgres / postgres |
 | Redis | localhost:6379 | Socket.IO adapter + Bull kuyruğu |
-| Mailpit | http://localhost:8025 | Gönderilen e-postalar burada görüntülenir |
+
+E-postalar gerçek bir SMTP sunucusu (örn. Gmail) ile gönderilir; kurulum için aşağıdaki
+"Gerçek SMTP" bölümüne bakın. SMTP yapılandırılmazsa uygulama çalışır, yalnızca e-posta
+gönderimi devre dışı kalır.
 
 ## Ortam Değişkenleri
 
@@ -167,9 +171,9 @@ CORS_ORIGIN=http://localhost:5173,http://127.0.0.1:5173
 ADMIN_EMAIL=admin@support.local
 ADMIN_PASSWORD=Admin123!
 REDIS_URL=redis://redis:6379
-SMTP_HOST=mailpit
-SMTP_PORT=1025
-SMTP_USER=                       # Mailpit için boş; gerçek SMTP için doldurun
+SMTP_HOST=smtp.gmail.com         # gerçek SMTP sunucusu
+SMTP_PORT=587
+SMTP_USER=                       # .env.local içinde doldurulur (repoya gitmez)
 SMTP_PASS=
 SMTP_SECURE=false
 MAIL_FROM=Destek Merkezi <no-reply@support.local>
@@ -179,22 +183,34 @@ MAX_UPLOAD_MB=10
 VITE_API_URL=http://localhost:3000
 ```
 
-### Gerçek SMTP (örn. Gmail) ile test
+### Gerçek SMTP (örn. Gmail) kurulumu
 
-Varsayılan olarak e-postalar Mailpit'e düşer. Gerçek bir SMTP sunucusuyla göndermek için
-`.env`'i şöyle değiştirin (örnek Gmail):
+E-postalar gerçek bir SMTP sunucusu üzerinden gönderilir. Gizli bilgiler (kullanıcı/şifre)
+**repoya konmaz**; bunun yerine git'e dahil edilmeyen `.env.local` dosyasına yazılır ve iki
+env-file birlikte yüklenir.
 
-```env
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=adresiniz@gmail.com
-SMTP_PASS=xxxx xxxx xxxx xxxx   # Gmail "Uygulama Şifresi" (App Password)
-```
+1. **Gmail Uygulama Şifresi oluşturun.** Google hesabınızda 2 Adımlı Doğrulama açıkken
+   https://myaccount.google.com/apppasswords adresinden 16 haneli bir şifre üretin.
+2. **`.env.local` oluşturun** (proje kökünde; `.gitignore`'da):
 
-> Gmail'de 2 adımlı doğrulama açıkken normal şifre çalışmaz; Google hesabınızdan
-> 16 haneli bir **Uygulama Şifresi** oluşturup `SMTP_PASS`'e yazın. Değişiklik sonrası
-> `docker compose up -d --build backend worker` ile yeniden başlatın.
+   ```env
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_SECURE=false
+   SMTP_USER=adresiniz@gmail.com
+   SMTP_PASS=xxxx xxxx xxxx xxxx          # Gmail Uygulama Şifresi
+   MAIL_FROM=Destek Merkezi <adresiniz@gmail.com>
+   ```
+
+3. **İki env-file ile başlatın** (`.env.local` değerleri `.env`'i ezer):
+
+   ```bash
+   docker compose --env-file .env --env-file .env.local up -d --build
+   ```
+
+> Not: Gmail, gönderen adresini kimliği doğrulanan hesaba sabitler; bu yüzden `MAIL_FROM`'u
+> da Gmail adresinizle ayarlamak en sağlıklısıdır. SMTP yapılandırılmazsa uygulama yine
+> çalışır, sadece e-posta gönderimi atlanır (hata fırlatmaz).
 
 ## Veritabanı ve Migration
 
@@ -225,7 +241,7 @@ Enum değerleri: `priority` = low/medium/high, `status` = open/in_progress/close
 | Temsilci (Faturalama) | billing.agent@support.local | Agent123! |
 | Müşteri | musteri1@firma.com ... musteri10@firma.com | User123! |
 
-Kayıt ekranından yeni müşteri de oluşturulabilir. Admin'in oluşturduğu kullanıcıların geçici şifresi Mailpit'e (http://localhost:8025) düşer.
+Kayıt ekranından yeni müşteri de oluşturulabilir. Admin'in oluşturduğu kullanıcıların geçici şifresi, SMTP yapılandırılmışsa e-posta ile gönderilir.
 
 ## Roller ve Yetkilendirme
 
@@ -368,7 +384,7 @@ Backend ile yalnızca **Redis üzerinden** (Bull iş kuyruğu) haberleşir; aral
 Amaç, kullanıcıyı bekletmemesi gereken / uzun süren işleri ana isteğin dışına taşımaktır.
 
 ```
-Backend (producer)  ──>  Redis (Bull "mail" kuyruğu)  ──>  Worker (consumer)  ──>  Mailpit/SMTP
+Backend (producer)  ──>  Redis (Bull "mail" kuyruğu)  ──>  Worker (consumer)  ──>  SMTP (Gmail vb.)
 ```
 
 İş türleri (`backend/src/queue.ts`):
@@ -379,7 +395,7 @@ Backend (producer)  ──>  Redis (Bull "mail" kuyruğu)  ──>  Worker (cons
   Her personele açık/SLA-riskli/atanmamış talep özetini e-postayla gönderir.
 
 Test için: admin **Ayarlar** ekranındaki "Günlük özeti şimdi gönder" düğmesi (veya
-`POST /jobs/digest`) işi anında kuyruğa atar; worker işler ve mailleri Mailpit'e (`:8025`) düşürür.
+`POST /jobs/digest`) işi anında kuyruğa atar; worker işler ve mailleri SMTP üzerinden gönderir.
 
 ```bash
 # Worker loglarını izle
@@ -422,4 +438,4 @@ Sık karşılaşılan durumlar:
 | --- | --- |
 | Port çakışması (3000/5173/5432) | Çakışan yerel servisi durdurun veya docker-compose.yml'de portu değiştirin |
 | Şemayı sıfırlamak | `docker compose down -v && docker compose up --build` |
-| Gönderilen e-postalar | Mailpit arayüzü: http://localhost:8025 |
+| E-posta gönderilmiyor | `.env.local`'de SMTP_USER/SMTP_PASS dolu mu; worker loglarına bakın (`docker compose logs worker`) |

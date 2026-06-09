@@ -13,8 +13,8 @@ const envSchema = z.object({
   ADMIN_EMAIL: z.string().email().default('admin@support.local'),
   ADMIN_PASSWORD: z.string().min(6).default('Admin123!'),
   REDIS_URL: z.string().default('redis://redis:6379'),
-  SMTP_HOST: z.string().default('mailpit'),
-  SMTP_PORT: z.coerce.number().default(1025),
+  SMTP_HOST: z.string().default('smtp.gmail.com'),
+  SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_SECURE: z

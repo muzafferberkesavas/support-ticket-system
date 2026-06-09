@@ -26,7 +26,7 @@ kod tabanına hızlıca hâkim olmanı sağlamaktır.
 - **Worker** (Bull): Backend/frontend'den bağımsız servis; Redis kuyruğundan iş alıp arka planda çalıştırır (e-posta gönderimi, günlük özet cron'u). Backend ile yalnızca Redis üzerinden haberleşir.
 - **PostgreSQL**: Kalıcı veri.
 - **Redis**: Socket.IO pub/sub **ve** Bull iş kuyruğu (backend ↔ worker).
-- **Mailpit**: Geliştirmede gönderilen e-postaları yakalayan sahte SMTP sunucusu.
+- **SMTP (e-posta)**: Gerçek bir SMTP sunucusu (örn. Gmail) üzerinden e-posta gönderilir; kimlik bilgileri `.env.local` ile verilir.
 
 Hepsi `docker-compose.yml` ile tanımlanır ve tek komutla ayağa kalkar.
 
@@ -47,7 +47,7 @@ Hepsi `docker-compose.yml` ile tanımlanır ve tek komutla ayağa kalkar.
 | **Socket.IO** | Gerçek zamanlı iki yönlü iletişim (WebSocket). |
 | **@socket.io/redis-adapter + ioredis** | Birden çok backend instance'ı arasında olay yayını. |
 | **Multer** | Dosya yükleme (multipart/form-data). |
-| **Nodemailer** | E-posta gönderimi (Mailpit veya gerçek SMTP). |
+| **Nodemailer** | E-posta gönderimi (gerçek SMTP; örn. Gmail). |
 
 ### Frontend
 
@@ -66,7 +66,7 @@ Hepsi `docker-compose.yml` ile tanımlanır ve tek komutla ayağa kalkar.
 
 ### Altyapı
 
-- **PostgreSQL 16**, **Redis 7**, **Mailpit**, **nginx** (frontend statik sunum), **Docker / Docker Compose**.
+- **PostgreSQL 16**, **Redis 7**, **nginx** (frontend statik sunum), **Docker / Docker Compose**.
 
 ---
 
@@ -79,7 +79,7 @@ Tarayıcı
   │  WebSocket (Socket.IO)│                                                            │
   └─────────────────────►│   ├── PostgreSQL (:5432)  kalıcı veri                       │
                           │   ├── Redis (:6379)       Socket.IO pub/sub                │
-                          │   ├── Mailpit (:1025)     e-posta                          │
+                          │   ├── SMTP (Gmail vb.)    e-posta gönderimi               │
                           │   └── uploads volume      dosya ekleri                     │
                           └────────────────────────────────────────────────────────────┘
 Frontend (nginx, :5173) statik dosyaları sunar; API çağrıları doğrudan :3000'e gider.
@@ -331,6 +331,6 @@ docker compose down -v && docker compose up --build
 - Şema değişikliği → `schema.prisma`'yı güncelle, `prisma/migrations/` altına yeni bir
   migration ekle; açılışta `prisma migrate deploy` otomatik uygular.
 - Frontend `VITE_API_URL` **build sırasında** gömülür; değişirse frontend'i yeniden build et.
-- E-postaları görmek için Mailpit: http://localhost:8025
+- E-posta gönderimi için gerçek SMTP (Gmail) bilgilerini `.env.local`'e yazın; ayrıntı README'de.
 
 > Daha fazla kullanım/kurulum bilgisi için kök dizindeki `README.md` dosyasına bakın.
