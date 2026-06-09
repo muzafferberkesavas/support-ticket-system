@@ -5,8 +5,9 @@ node_modules/
 dist/
 build/
 
-# Env
-.env
+# Env — the committed .env holds safe development defaults so the project
+# runs straight after cloning. Keep personal overrides out of git:
+.env.local
 *.local
 
 # Logs

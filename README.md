@@ -2,10 +2,12 @@
 
 Kullanıcı bazlı çalışan, gerçek zamanlı bir destek talep (helpdesk) uygulaması. Görevde istenen temel gereksinimleri (Vue 3 + TypeScript, Express + TypeScript, PostgreSQL, JWT, Docker Compose) karşılar; bunların üzerine rol/departman bazlı yetkilendirme, SLA takibi, otomatik atama, dosya ekleri, canlı bildirimler ve analiz paneli gibi özellikler ekler.
 
-Tek komutla ayağa kalkar:
+Klonlayıp tek komutla ayağa kalkar (ortam değişkenleri için ek bir adım gerekmez; `.env` repoya dahildir):
 
 ```bash
-cp .env.example .env && docker compose up --build
+git clone https://github.com/muzafferberkesavas/support-ticket-system
+cd support-ticket-system
+docker compose up --build
 ```
 
 Frontend: http://localhost:5173 — Backend: http://localhost:3000
@@ -108,15 +110,9 @@ Ek olarak geliştirilen özellikler:
 
 Önkoşul: Docker ve Docker Compose.
 
-### 1. .env dosyasını hazırlama
+### 1. Ortam değişkenleri
 
-Ortam değişkenleri `.env` dosyası ile yönetilir. Şablonu kopyalayın:
-
-```bash
-cp .env.example .env
-```
-
-`.env` içindeki değerler yerel geliştirme için hazır gelir; `JWT_SECRET` gibi değerleri gerçek bir ortamda değiştirin. (`.env` dosyası git'e dahil edilmez; `.env.example` ise şablon olarak repoda bulunur.)
+Ortam değişkenleri `.env` dosyası ile yönetilir. Bu dosya, geliştirme için güvenli varsayılan değerlerle birlikte repoya dahildir; dolayısıyla klonladıktan sonra ayrı bir kopyalama adımına gerek yoktur. `JWT_SECRET` gibi değerleri gerçek bir ortamda değiştirin. Kişisel değişiklikleriniz için `.env.local` kullanabilirsiniz (git'e dahil edilmez).
 
 ### 2. Docker Compose ile çalıştırma
 
@@ -153,7 +149,7 @@ docker compose down -v && docker compose up --build
 
 ## Ortam Değişkenleri
 
-Tümü `.env.example` içinde açıklamalıdır. Başlıcaları:
+Tümü `.env` dosyasında açıklamalı olarak yer alır. Başlıcaları:
 
 ```env
 DATABASE_URL=postgresql://postgres:postgres@postgres:5432/support_db
