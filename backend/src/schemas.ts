@@ -80,6 +80,14 @@ export const updateSlaSchema = z.object({
   low: slaTargetSchema,
 });
 
+export const exportFiltersSchema = z.object({
+  status: statusEnum.optional(),
+  priority: priorityEnum.optional(),
+  departmentId: z.string().uuid().optional(),
+  tag: z.string().trim().max(30).optional(),
+  search: z.string().trim().max(120).optional(),
+});
+
 export const listTicketsQuerySchema = z.object({
   status: statusEnum.optional(),
   priority: priorityEnum.optional(),

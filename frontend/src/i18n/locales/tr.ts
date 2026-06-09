@@ -181,6 +181,8 @@ export default {
       filterTag: 'Etikete göre filtrele',
     },
     sortHint: 'İpucu: Birden fazla kolona göre sıralamak için ⌘/Ctrl tuşuna basılı tutup başlıklara tıklayın.',
+    exportEmail: 'E-posta ile dışa aktar',
+    exportQueued: 'Dışa aktarım kuyruğa alındı; worker hazırlayıp e-postanıza gönderecek.',
     validation: {
       subjectMin: 'Konu en az 3 karakter olmalıdır.',
       messageMin: 'Açıklama en az 5 karakter olmalıdır.',

@@ -181,6 +181,8 @@ export default {
       filterTag: 'Filter by tag',
     },
     sortHint: 'Tip: hold ⌘/Ctrl and click headers to sort by multiple columns.',
+    exportEmail: 'Export via email',
+    exportQueued: 'Export queued; the worker will prepare it and email it to you.',
     validation: {
       subjectMin: 'Subject must be at least 3 characters.',
       messageMin: 'Description must be at least 5 characters.',

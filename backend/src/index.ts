@@ -3,7 +3,6 @@ import { createApp } from './app';
 import { env } from './env';
 import { prisma } from './prisma';
 import { initRealtime } from './realtime/socket';
-import { startSlaScheduler } from './services/scheduler';
 import { refreshSlaTargets } from './services/sla';
 
 const app = createApp();
@@ -12,8 +11,9 @@ const server = http.createServer(app);
 // Attach Socket.IO (real-time) to the same HTTP server.
 initRealtime(server).catch((err) => console.error('Realtime init failed:', err));
 
-// Load admin-configurable SLA targets, then start background checks.
-refreshSlaTargets().finally(() => startSlaScheduler());
+// Load admin-configurable SLA targets. (SLA auto-escalation now runs in the
+// independent worker as a Bull cron job — see backend/src/worker.ts.)
+void refreshSlaTargets();
 
 server.listen(env.PORT, () => {
   console.log(`🚀 Backend listening on http://localhost:${env.PORT}`);

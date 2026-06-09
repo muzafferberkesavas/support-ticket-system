@@ -31,7 +31,18 @@ export function isDeliverable(to: string): boolean {
 
 export const isMailConfigured = Boolean(env.SMTP_USER && env.SMTP_PASS);
 
-async function send(to: string, subject: string, html: string): Promise<void> {
+interface MailAttachment {
+  filename: string;
+  content: string | Buffer;
+  contentType?: string;
+}
+
+async function send(
+  to: string,
+  subject: string,
+  html: string,
+  attachments?: MailAttachment[],
+): Promise<void> {
   if (!isMailConfigured) {
     console.log(`✉️  SMTP not configured — skipping email to ${to}`);
     return;
@@ -41,7 +52,7 @@ async function send(to: string, subject: string, html: string): Promise<void> {
     return;
   }
   try {
-    await transporter.sendMail({ from: env.MAIL_FROM, to, subject, html });
+    await transporter.sendMail({ from: env.MAIL_FROM, to, subject, html, attachments });
     console.log(`📧 Email sent to ${to}: ${subject}`);
   } catch (err) {
     // Never let an email failure break the request flow.
@@ -125,6 +136,33 @@ export async function sendDigestEmail(
      <p style="margin:18px 0">${btn(env.APP_URL + '/dashboard', 'Panele Git')}</p>`,
   );
   await send(to, 'Destek Merkezi — Günlük Özet', html);
+}
+
+export async function sendCsatEmail(to: string, ticketId: string, ticketSubject: string): Promise<void> {
+  const html = layout(
+    'Talebiniz çözüldü — değerlendirir misiniz?',
+    `<p style="color:#374151;line-height:1.6">"<strong>${ticketSubject}</strong>" talebiniz kapatıldı. Aldığınız desteği
+     1–5 yıldız ile değerlendirerek bize yardımcı olabilir misiniz?</p>
+     <p style="margin:18px 0">${btn(env.APP_URL + '/tickets/' + ticketId, 'Değerlendir')}</p>`,
+  );
+  await send(to, 'Destek Merkezi — Memnuniyet değerlendirmesi', html);
+}
+
+export async function sendExportEmail(
+  to: string,
+  name: string | null,
+  csv: string,
+  filename: string,
+  count: number,
+): Promise<void> {
+  const html = layout(
+    `Dışa aktarımınız hazır${name ? ', ' + name : ''}`,
+    `<p style="color:#374151;line-height:1.6">İstediğiniz talep dışa aktarımı tamamlandı (<strong>${count}</strong> kayıt).
+     CSV dosyası bu e-postaya eklenmiştir: <code>${filename}</code></p>`,
+  );
+  await send(to, 'Destek Merkezi — Talep dışa aktarımı', html, [
+    { filename, content: '﻿' + csv, contentType: 'text/csv; charset=utf-8' },
+  ]);
 }
 
 export async function sendResetEmail(to: string, resetLink: string): Promise<void> {

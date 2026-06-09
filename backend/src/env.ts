@@ -27,6 +27,15 @@ const envSchema = z.object({
   MAX_UPLOAD_MB: z.coerce.number().default(10),
   // Worker: cron schedule for the daily digest job (default 08:00 every day).
   DIGEST_CRON: z.string().default('0 8 * * *'),
+  // Worker: SLA auto-escalation + stale-reminder sweep cron (default every 2 min).
+  SLA_SWEEP_CRON: z.string().default('*/2 * * * *'),
+  STALE_TICKET_DAYS: z.coerce.number().default(3),
+  // Delay before a CSAT survey email is sent after a ticket closes (ms; default 1h).
+  CSAT_DELAY_MS: z.coerce.number().default(3_600_000),
+  // Bull Board (worker queue dashboard) — basic auth + port.
+  BULLBOARD_PORT: z.coerce.number().default(3001),
+  BULLBOARD_USER: z.string().default('admin'),
+  BULLBOARD_PASS: z.string().default('Admin123!'),
 });
 
 const parsed = envSchema.safeParse(process.env);

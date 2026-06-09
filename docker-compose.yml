@@ -80,6 +80,7 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN}
       REDIS_URL: ${REDIS_URL}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
@@ -89,6 +90,14 @@ services:
       MAIL_FROM: ${MAIL_FROM}
       APP_URL: ${APP_URL}
       DIGEST_CRON: ${DIGEST_CRON}
+      SLA_SWEEP_CRON: ${SLA_SWEEP_CRON}
+      STALE_TICKET_DAYS: ${STALE_TICKET_DAYS}
+      CSAT_DELAY_MS: ${CSAT_DELAY_MS}
+      BULLBOARD_PORT: ${BULLBOARD_PORT}
+      BULLBOARD_USER: ${BULLBOARD_USER}
+      BULLBOARD_PASS: ${BULLBOARD_PASS}
+    ports:
+      - "3001:3001" # Bull Board (queue dashboard)
     depends_on:
       postgres:
         condition: service_healthy

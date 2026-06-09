@@ -25,6 +25,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useUiStore } from '@/stores/ui';
 import { PRIORITY_RANK, PRIORITY_VALUES, STATUS_RANK, STATUS_VALUES, formatDateTime, initials } from '@/constants';
 import { downloadCsv } from '@/utils/csv';
+import { jobsService } from '@/services/jobs.service';
 import type { Department, Ticket } from '@/types';
 import PriorityTag from '@/components/PriorityTag.vue';
 import StatusTag from '@/components/StatusTag.vue';
@@ -128,6 +129,26 @@ async function loadDepartments() {
 
 async function loadTags() {
   availableTags.value = await ticketService.tags().catch(() => []);
+}
+
+// Offload a (potentially large) export to the worker; it builds the CSV and emails it.
+const emailExporting = ref(false);
+async function emailExport() {
+  emailExporting.value = true;
+  try {
+    await jobsService.exportTickets({
+      status: filters.status || undefined,
+      priority: filters.priority || undefined,
+      departmentId: filters.departmentId || undefined,
+      tag: filters.tag || undefined,
+      search: searchText.value.trim() || undefined,
+    });
+    toast.add({ severity: 'success', summary: t('tickets.exportQueued'), life: 4000 });
+  } catch (err) {
+    toast.add({ severity: 'error', summary: t('errors.generic'), detail: extractErrorMessage(err), life: 4000 });
+  } finally {
+    emailExporting.value = false;
+  }
 }
 
 function clearFilters() {
@@ -299,6 +320,15 @@ onUnmounted(() => {
         icon="pi pi-file-export"
         outlined
         @click="exportTickets"
+      />
+      <Button
+        v-if="auth.isStaff"
+        :label="t('tickets.exportEmail')"
+        icon="pi pi-envelope"
+        outlined
+        severity="secondary"
+        :loading="emailExporting"
+        @click="emailExport"
       />
       <Button :label="t('tickets.new')" icon="pi pi-plus" @click="openCreate" />
     </div>

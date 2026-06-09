@@ -11,8 +11,19 @@ export interface ReplyEmailJob {
   authorName: string;
 }
 
+export interface ExportJob {
+  requesterId: string;
+  requesterRole: 'user' | 'agent' | 'team_lead' | 'admin';
+  email: string;
+  requestedByName: string;
+  filters: Record<string, string | undefined>;
+}
+
 export const JOB_REPLY_EMAIL = 'reply-email';
 export const JOB_DAILY_DIGEST = 'daily-digest';
+export const JOB_SLA_SWEEP = 'sla-sweep';
+export const JOB_CSAT_REQUEST = 'csat-request';
+export const JOB_EXPORT = 'export-tickets';
 
 export const mailQueue = new Queue('mail', env.REDIS_URL, {
   // Rate limit to stay well under provider sending limits (Gmail ~500/day).
@@ -34,10 +45,21 @@ export function enqueueDigestNow() {
   return mailQueue.add(JOB_DAILY_DIGEST, { manual: true });
 }
 
-// Registers the repeatable daily-digest cron job (called by the worker on boot).
-export async function scheduleDailyDigest(): Promise<void> {
-  // Clear any prior repeatables so a changed cron expression takes effect.
+// Delayed job: CSAT survey email is sent CSAT_DELAY_MS after a ticket closes.
+export function enqueueCsatRequest(ticketId: string) {
+  return mailQueue.add(JOB_CSAT_REQUEST, { ticketId }, { delay: env.CSAT_DELAY_MS });
+}
+
+// Heavy work offloaded from the request: build a CSV export and email it.
+export function enqueueExport(data: ExportJob) {
+  return mailQueue.add(JOB_EXPORT, data);
+}
+
+// Registers the repeatable cron jobs (called by the worker on boot).
+export async function scheduleRepeatables(): Promise<void> {
+  // Clear prior repeatables so changed cron expressions take effect.
   const existing = await mailQueue.getRepeatableJobs();
   await Promise.all(existing.map((r) => mailQueue.removeRepeatableByKey(r.key)));
   await mailQueue.add(JOB_DAILY_DIGEST, {}, { repeat: { cron: env.DIGEST_CRON } });
+  await mailQueue.add(JOB_SLA_SWEEP, {}, { repeat: { cron: env.SLA_SWEEP_CRON } });
 }

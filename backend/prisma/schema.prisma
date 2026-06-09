@@ -175,6 +175,7 @@ model Ticket {
   resolvedAt      DateTime?     @map("resolved_at") // when moved to closed
   escalated       Boolean       @default(false)
   escalatedAt     DateTime?     @map("escalated_at")
+  reminderSentAt  DateTime?     @map("reminder_sent_at") // last "stale ticket" reminder
   csatRating      Int?          @map("csat_rating") // 1-5 satisfaction
   csatComment     String?       @map("csat_comment")
   csatAt          DateTime?     @map("csat_at")

@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { authenticate, requireAdmin } from '../middleware/auth';
+import { authenticate, requireAdmin, requireStaff } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
-import { runDigest } from '../controllers/jobs.controller';
+import { runDigest, runExport } from '../controllers/jobs.controller';
 
 const router = Router();
-router.use(authenticate, requireAdmin);
+router.use(authenticate);
 
-router.post('/digest', asyncHandler(runDigest));
+router.post('/digest', requireAdmin, asyncHandler(runDigest));
+router.post('/export', requireStaff, asyncHandler(runExport));
 
 export default router;

@@ -18,7 +18,7 @@ import { withSla } from '../services/sla';
 import { audit, getTicketActivity } from '../services/audit';
 import { pickLeastLoadedAgent } from '../services/autoAssign';
 import { estimateForTicket } from '../services/estimate';
-import { enqueueReplyEmail } from '../queue';
+import { enqueueReplyEmail, enqueueCsatRequest } from '../queue';
 import { priorityEnum } from '../schemas';
 
 function actorName(user: { fullName?: string | null; email: string }): string {
@@ -246,8 +246,11 @@ export async function updateTicket(req: Request, res: Response): Promise<void> {
 
   // Audit field changes.
   const who = { ticketId: existing.id, actorId: user.id, actorName: actorName(user as never) };
-  if (data.status !== undefined && data.status !== existing.status)
+  if (data.status !== undefined && data.status !== existing.status) {
     audit('ticket.status', { ...who, detail: { from: existing.status, to: data.status } });
+    // Ticket just closed → schedule a delayed CSAT survey email via the worker.
+    if (data.status === 'closed') void enqueueCsatRequest(existing.id);
+  }
   if (data.priority !== undefined && data.priority !== existing.priority)
     audit('ticket.priority', { ...who, detail: { from: existing.priority, to: data.priority } });
   if (data.departmentId !== undefined && data.departmentId !== existing.departmentId)
@@ -533,6 +536,7 @@ export async function bulkUpdate(req: Request, res: Response): Promise<void> {
         data: { status, resolvedAt: status === 'closed' ? new Date() : null },
       });
       audit('ticket.status', { ticketId: id, actorId: user.id, actorName: user.email, detail: { to: status, bulk: true } });
+      if (status === 'closed' && t.status !== 'closed') void enqueueCsatRequest(id);
       emitTicketUpdated(t, []);
       updated += 1;
     } else if (action === 'assign') {
