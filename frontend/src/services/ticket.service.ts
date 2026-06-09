@@ -55,6 +55,11 @@ export const ticketService = {
     return data.ticket;
   },
 
+  async reopen(id: string): Promise<Ticket> {
+    const { data } = await api.post<{ ticket: Ticket }>(`/tickets/${id}/reopen`);
+    return data.ticket;
+  },
+
   async activity(id: string): Promise<AuditEntry[]> {
     const { data } = await api.get<{ activity: AuditEntry[] }>(`/tickets/${id}/activity`);
     return data.activity;

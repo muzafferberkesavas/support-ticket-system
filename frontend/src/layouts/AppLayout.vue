@@ -14,6 +14,7 @@ import { initials, formatDateTime } from '@/constants';
 import { useNotificationText } from '@/composables/useNotificationText';
 import BrandLogo from '@/components/BrandLogo.vue';
 import RoleTag from '@/components/RoleTag.vue';
+import CommandPalette from '@/components/CommandPalette.vue';
 import type { AppNotification } from '@/types';
 
 const auth = useAuthStore();
@@ -27,6 +28,7 @@ const { t } = useI18n();
 const sidebarOpen = ref(false);
 const userMenu = ref();
 const notifPanel = ref();
+const cmdPalette = ref();
 
 const recentNotifications = computed(() => notifications.items.slice(0, 6));
 
@@ -75,6 +77,7 @@ const adminLinks = computed<NavLink[]>(() => [
     show: auth.isAdmin,
   },
   { key: 'users', label: t('nav.users'), icon: 'pi pi-users', to: '/users', show: auth.isAdmin },
+  { key: 'settings', label: t('nav.settings'), icon: 'pi pi-cog', to: '/settings', show: auth.isAdmin },
 ]);
 
 const showAdminSection = computed(() => adminLinks.value.some((l) => l.show));
@@ -138,7 +141,7 @@ async function logout() {
         </template>
 
         <template v-if="showAdminSection">
-          <div class="sidebar-section">{{ t('nav.dashboard') }}</div>
+          <div class="sidebar-section">{{ t('nav.management') }}</div>
           <template v-for="link in adminLinks" :key="link.key">
             <div
               v-if="link.show"
@@ -181,6 +184,9 @@ async function logout() {
           <BrandLogo class="topbar-logo" :size="28" :animated="false" />
         </div>
         <div class="topbar-actions">
+          <button class="bell-btn cmd-btn" @click="cmdPalette?.toggle()" v-tooltip.bottom="'⌘K'">
+            <i class="pi pi-search" />
+          </button>
           <span
             class="conn-dot"
             :class="{ online: socketConnected }"
@@ -270,6 +276,8 @@ async function logout() {
         <slot />
       </main>
     </div>
+
+    <CommandPalette ref="cmdPalette" />
   </div>
 </template>
 

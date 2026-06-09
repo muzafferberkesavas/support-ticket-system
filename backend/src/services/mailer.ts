@@ -53,6 +53,23 @@ export async function sendWelcomeEmail(
   await send(to, 'Destek Merkezi — Hesabınız oluşturuldu', html);
 }
 
+export async function sendReplyEmail(
+  to: string,
+  ticketId: string,
+  ticketSubject: string,
+  replyMessage: string,
+  authorName: string,
+): Promise<void> {
+  const preview = replyMessage.length > 400 ? `${replyMessage.slice(0, 400)}…` : replyMessage;
+  const html = layout(
+    `"${ticketSubject}" talebinize yanıt geldi`,
+    `<p style="color:#374151;line-height:1.6"><strong>${authorName}</strong> talebinize yanıt verdi:</p>
+     <blockquote style="margin:14px 0;padding:12px 16px;background:#f3f4fb;border-left:3px solid #4f46e5;border-radius:8px;color:#374151;white-space:pre-wrap">${preview}</blockquote>
+     <p style="margin:18px 0">${btn(env.APP_URL + '/tickets/' + ticketId, 'Talebi Görüntüle')}</p>`,
+  );
+  await send(to, `Destek Merkezi — "${ticketSubject}" talebinize yanıt`, html);
+}
+
 export async function sendResetEmail(to: string, resetLink: string): Promise<void> {
   const html = layout(
     'Şifre sıfırlama',

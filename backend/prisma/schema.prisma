@@ -63,6 +63,16 @@ model Notification {
   @@map("notifications")
 }
 
+// Configurable SLA targets per priority (admin-editable).
+model SlaPolicy {
+  priority          String   @id // low | medium | high
+  responseMinutes   Int      @map("response_minutes")
+  resolutionMinutes Int      @map("resolution_minutes")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("sla_policies")
+}
+
 // Reusable staff reply templates (macros). departmentId null = global.
 model CannedResponse {
   id           String   @id @default(uuid())

@@ -11,6 +11,7 @@ export type AuditAction =
   | 'ticket.escalated'
   | 'ticket.attachment'
   | 'ticket.csat'
+  | 'ticket.reopened'
   | 'ticket.deleted';
 
 interface AuditInput {

@@ -15,6 +15,7 @@ import {
   getTicket,
   listTags,
   listTickets,
+  reopenTicket,
   submitCsat,
   updateTicket,
 } from '../controllers/ticket.controller';
@@ -37,6 +38,7 @@ router.put('/:id', asyncHandler(updateTicket));
 router.delete('/:id', asyncHandler(deleteTicket));
 router.patch('/:id/assign', requireStaff, asyncHandler(assignTicket));
 router.patch('/:id/escalate', requireStaff, asyncHandler(escalateTicket));
+router.post('/:id/reopen', asyncHandler(reopenTicket));
 router.post('/:id/attachments', upload.array('files', 5), asyncHandler(uploadAttachments));
 router.post('/:id/csat', asyncHandler(submitCsat));
 router.post('/:id/replies', asyncHandler(addReply));

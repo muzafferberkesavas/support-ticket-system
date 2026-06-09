@@ -1,9 +1,41 @@
-// SLA targets in minutes per priority (first response / resolution).
-export const SLA_TARGETS: Record<string, { response: number; resolution: number }> = {
+import { prisma } from '../prisma';
+
+export interface SlaTarget {
+  response: number;
+  resolution: number;
+}
+
+// Built-in defaults (minutes). Overridable from the database (admin-editable).
+export const DEFAULT_SLA_TARGETS: Record<string, SlaTarget> = {
   high: { response: 60, resolution: 240 }, // 1h / 4h
   medium: { response: 240, resolution: 1440 }, // 4h / 24h
   low: { response: 480, resolution: 4320 }, // 8h / 72h
 };
+
+// In-memory active config (sync access for computeSla); refreshed from DB.
+let activeTargets: Record<string, SlaTarget> = { ...DEFAULT_SLA_TARGETS };
+
+export function getSlaTargets(): Record<string, SlaTarget> {
+  return activeTargets;
+}
+
+export function setSlaTargets(targets: Record<string, SlaTarget>): void {
+  activeTargets = targets;
+}
+
+// Loads SLA policies from the database into the in-memory cache.
+export async function refreshSlaTargets(): Promise<void> {
+  try {
+    const rows = await prisma.slaPolicy.findMany();
+    if (rows.length) {
+      const map: Record<string, SlaTarget> = { ...DEFAULT_SLA_TARGETS };
+      for (const r of rows) map[r.priority] = { response: r.responseMinutes, resolution: r.resolutionMinutes };
+      activeTargets = map;
+    }
+  } catch (err) {
+    console.warn('Could not load SLA policies, using defaults:', err);
+  }
+}
 
 const MIN = 60_000;
 
@@ -16,7 +48,7 @@ export interface SlaInfo {
   resolutionOverdue: boolean;
   breached: boolean;
   ageMinutes: number;
-  resolutionRemainingMinutes: number | null; // null when closed
+  resolutionRemainingMinutes: number | null;
 }
 
 interface SlaTicket {
@@ -27,9 +59,10 @@ interface SlaTicket {
   resolvedAt: Date | null;
 }
 
-// Computes SLA / aging status for a ticket (not stored — derived on read).
+// Computes SLA / aging status for a ticket (derived on read, not stored).
 export function computeSla(t: SlaTicket, now = new Date()): SlaInfo {
-  const target = SLA_TARGETS[t.priority] ?? SLA_TARGETS.medium;
+  const targets = getSlaTargets();
+  const target = targets[t.priority] ?? targets.medium ?? DEFAULT_SLA_TARGETS.medium;
   const created = t.createdAt.getTime();
   const responseDue = created + target.response * MIN;
   const resolutionDue = created + target.resolution * MIN;
@@ -37,7 +70,6 @@ export function computeSla(t: SlaTicket, now = new Date()): SlaInfo {
 
   const responseOverdue = !t.firstResponseAt && !isClosed && now.getTime() > responseDue;
   const resolutionOverdue = !t.resolvedAt && !isClosed && now.getTime() > resolutionDue;
-
   const endForAge = isClosed && t.resolvedAt ? t.resolvedAt.getTime() : now.getTime();
 
   return {
@@ -53,7 +85,6 @@ export function computeSla(t: SlaTicket, now = new Date()): SlaInfo {
   };
 }
 
-// Attaches an `sla` block to a ticket object for API responses.
 export function withSla<T extends SlaTicket>(ticket: T): T & { sla: SlaInfo } {
   return { ...ticket, sla: computeSla(ticket) };
 }

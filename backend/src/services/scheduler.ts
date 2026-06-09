@@ -1,5 +1,5 @@
 import { prisma } from '../prisma';
-import { SLA_TARGETS } from './sla';
+import { getSlaTargets } from './sla';
 import { audit } from './audit';
 import { emitTicketUpdated } from '../realtime/socket';
 import { notifyAdmins, notifyDepartment } from './notifications';
@@ -16,7 +16,8 @@ async function runSlaCheck(): Promise<void> {
   });
 
   for (const t of tickets) {
-    const target = SLA_TARGETS[t.priority] ?? SLA_TARGETS.medium;
+    const slaTargets = getSlaTargets();
+    const target = slaTargets[t.priority] ?? slaTargets.medium;
     const resolutionDue = t.createdAt.getTime() + target.resolution * MIN;
     if (now <= resolutionDue) continue;
 

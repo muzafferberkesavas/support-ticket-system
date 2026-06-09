@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma';
-import { SLA_TARGETS } from './sla';
+import { getSlaTargets } from './sla';
 
 const MIN = 60_000;
 const avg = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null);
@@ -20,7 +20,8 @@ export async function estimateForTicket(
   priority: string,
   departmentId?: string | null,
 ): Promise<Estimate> {
-  const sla = SLA_TARGETS[priority] ?? SLA_TARGETS.medium;
+  const slaTargets = getSlaTargets();
+  const sla = slaTargets[priority] ?? slaTargets.medium;
   const base: Prisma.TicketWhereInput = {
     priority: priority as 'low' | 'medium' | 'high',
     ...(departmentId ? { departmentId } : {}),

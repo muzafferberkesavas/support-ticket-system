@@ -11,6 +11,7 @@ import analyticsRoutes from './routes/analytics.routes';
 import attachmentRoutes from './routes/attachment.routes';
 import cannedRoutes from './routes/canned.routes';
 import dashboardRoutes from './routes/dashboard.routes';
+import slaRoutes from './routes/sla.routes';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
 export function createApp() {
@@ -42,6 +43,7 @@ export function createApp() {
   app.use('/attachments', attachmentRoutes);
   app.use('/canned', cannedRoutes);
   app.use('/dashboard', dashboardRoutes);
+  app.use('/sla', slaRoutes);
 
   // Fallbacks
   app.use(notFound);

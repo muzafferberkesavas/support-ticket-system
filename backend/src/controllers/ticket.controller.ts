@@ -18,6 +18,7 @@ import { withSla } from '../services/sla';
 import { audit, getTicketActivity } from '../services/audit';
 import { pickLeastLoadedAgent } from '../services/autoAssign';
 import { estimateForTicket } from '../services/estimate';
+import { sendReplyEmail } from '../services/mailer';
 import { priorityEnum } from '../schemas';
 
 function actorName(user: { fullName?: string | null; email: string }): string {
@@ -375,8 +376,17 @@ export async function addReply(req: Request, res: Response): Promise<void> {
     const author = actorName(reply.author);
     const notif = { type: 'reply' as const, ticketId: ticket.id, ticketSubject: ticket.subject, actor: author };
     if (isStaff(user.role)) {
-      // Staff replied → notify the requester.
-      if (ticket.userId !== user.id) notifyUsers([ticket.userId], notif, user.id);
+      // Staff replied → notify the requester (in-app + email).
+      if (ticket.userId !== user.id) {
+        notifyUsers([ticket.userId], notif, user.id);
+        const requester = await prisma.user.findUnique({
+          where: { id: ticket.userId },
+          select: { email: true },
+        });
+        if (requester) {
+          void sendReplyEmail(requester.email, ticket.id, ticket.subject, message, author);
+        }
+      }
     } else {
       // Requester replied → notify assigned agents + department + admins.
       const assignees = await prisma.ticketAssignee.findMany({
@@ -408,6 +418,30 @@ export async function escalateTicket(req: Request, res: Response): Promise<void>
   if (existing.priority !== 'high') data.priority = 'high';
   await prisma.ticket.update({ where: { id: existing.id }, data });
   audit('ticket.escalated', { ticketId: existing.id, actorId: user.id, actorName: user.email, detail: { reason } });
+
+  const ticket = await prisma.ticket.findUnique({ where: { id: existing.id }, include: ticketDetailInclude });
+  emitTicketUpdated(ticket!, ticket!.assignees.map((a) => a.userId));
+  const notif = { type: 'status' as const, ticketId: existing.id, ticketSubject: existing.subject, actor: user.email };
+  if (existing.departmentId) notifyDepartment(existing.departmentId, notif, user.id);
+  notifyAdmins(notif, user.id);
+
+  res.json({ ticket: serialize(filterReplies(ticket!, user)) });
+}
+
+// POST /tickets/:id/reopen — requester or staff reopens a closed ticket.
+export async function reopenTicket(req: Request, res: Response): Promise<void> {
+  const user = req.user as Principal;
+  const existing = await prisma.ticket.findUnique({ where: { id: req.params.id } });
+  if (!existing) throw new AppError(404, 'Ticket not found');
+  if (!(await canAccessTicket(user, existing))) {
+    throw new AppError(403, 'You do not have access to this ticket');
+  }
+  if (existing.status !== 'closed') {
+    throw new AppError(422, 'Only a closed ticket can be reopened');
+  }
+
+  await prisma.ticket.update({ where: { id: existing.id }, data: { status: 'open', resolvedAt: null } });
+  audit('ticket.reopened', { ticketId: existing.id, actorId: user.id, actorName: user.email });
 
   const ticket = await prisma.ticket.findUnique({ where: { id: existing.id }, include: ticketDetailInclude });
   emitTicketUpdated(ticket!, ticket!.assignees.map((a) => a.userId));

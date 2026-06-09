@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma';
 import { getUserDepartmentIds, type Principal } from '../services/access';
 import { analyzeThemes } from '../services/textAnalysis';
-import { SLA_TARGETS } from '../services/sla';
+import { getSlaTargets } from '../services/sla';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const minutesBetween = (a: Date, b: Date) => (b.getTime() - a.getTime()) / 60000;
@@ -67,7 +67,8 @@ export async function getAnalytics(req: Request, res: Response): Promise<void> {
     if (t.escalated) escalatedCount += 1;
     if (t.csatRating != null) csatRatings.push(t.csatRating);
 
-    const target = SLA_TARGETS[t.priority] ?? SLA_TARGETS.medium;
+    const slaTargets = getSlaTargets();
+    const target = slaTargets[t.priority] ?? slaTargets.medium;
     if (t.firstResponseAt) {
       const m = minutesBetween(t.createdAt, t.firstResponseAt);
       frTimes.push(m);

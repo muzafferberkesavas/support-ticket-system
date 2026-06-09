@@ -70,6 +70,16 @@ export const updateProfileSchema = z.object({
   fullName: z.string().trim().min(2, 'Name must be at least 2 characters').max(120).nullable(),
 });
 
+const slaTargetSchema = z.object({
+  response: z.coerce.number().int().min(1).max(100000),
+  resolution: z.coerce.number().int().min(1).max(1000000),
+});
+export const updateSlaSchema = z.object({
+  high: slaTargetSchema,
+  medium: slaTargetSchema,
+  low: slaTargetSchema,
+});
+
 export const listTicketsQuerySchema = z.object({
   status: statusEnum.optional(),
   priority: priorityEnum.optional(),

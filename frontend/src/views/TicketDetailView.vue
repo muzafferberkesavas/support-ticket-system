@@ -158,6 +158,23 @@ function confirmDelete() {
 
 const canDelete = computed(() => auth.isAdmin || ticket.value?.userId === auth.user?.id);
 const isRequester = computed(() => ticket.value?.userId === auth.user?.id);
+const canReopen = computed(
+  () => !!ticket.value && ticket.value.status === 'closed' && (isRequester.value || auth.isStaff),
+);
+const reopening = ref(false);
+async function reopen() {
+  if (!ticket.value) return;
+  reopening.value = true;
+  try {
+    ticket.value = await ticketService.reopen(ticket.value.id);
+    await load();
+    toast.add({ severity: 'success', summary: t('tickets.detail.reopened'), life: 3000 });
+  } catch (err) {
+    toast.add({ severity: 'error', summary: t('errors.generic'), detail: extractErrorMessage(err), life: 4000 });
+  } finally {
+    reopening.value = false;
+  }
+}
 const canEscalate = computed(
   () => auth.isStaff && !!ticket.value && !ticket.value.escalated && ticket.value.status !== 'closed',
 );
@@ -568,6 +585,17 @@ onUnmounted(() => {
           </template>
         </template>
       </Card>
+
+      <Button
+        v-if="canReopen"
+        :label="t('tickets.detail.reopen')"
+        icon="pi pi-replay"
+        severity="warn"
+        class="full-width"
+        :loading="reopening"
+        style="margin-top: 1rem"
+        @click="reopen"
+      />
 
       <div class="detail-actions">
         <Button :label="t('common.edit')" icon="pi pi-pencil" outlined @click="dialogVisible = true" />
