@@ -1,320 +1,354 @@
-# 🎫 Destek Talep Sistemi (Support Ticket System)
+# Destek Talep Sistemi (Support Ticket System)
 
-Kurumsal seviyede, gerçek zamanlı bir **Destek Talep (Helpdesk / Support Ticket)** uygulaması. JWT kimlik doğrulama, rol & departman bazlı yetkilendirme, otomatik atama, SLA takibi, canlı bildirimler, dosya ekleri, memnuniyet anketi (CSAT) ve analiz panelini içerir. Tüm servisler **tek komutla** Docker Compose üzerinde ayağa kalkar.
+Kullanıcı bazlı çalışan, gerçek zamanlı bir destek talep (helpdesk) uygulaması. Görevde istenen temel gereksinimleri (Vue 3 + TypeScript, Express + TypeScript, PostgreSQL, JWT, Docker Compose) karşılar; bunların üzerine rol/departman bazlı yetkilendirme, SLA takibi, otomatik atama, dosya ekleri, canlı bildirimler ve analiz paneli gibi özellikler ekler.
+
+Tek komutla ayağa kalkar:
 
 ```bash
 cp .env.example .env && docker compose up --build
 ```
 
-→ Frontend: http://localhost:5173 • Backend: http://localhost:3000 • Mailpit: http://localhost:8025
+Frontend: http://localhost:5173 — Backend: http://localhost:3000
 
----
+## İçindekiler
 
-## 📋 İçindekiler
+- [Genel Bilgi](#genel-bilgi)
+- [Özellikler](#özellikler)
+- [Proje Yapısı](#proje-yapısı)
+- [Kurulum ve Çalıştırma](#kurulum-ve-çalıştırma)
+- [Ortam Değişkenleri](#ortam-değişkenleri)
+- [Veritabanı ve Migration](#veritabanı-ve-migration)
+- [Demo Hesapları](#demo-hesapları)
+- [Roller ve Yetkilendirme](#roller-ve-yetkilendirme)
+- [API Dokümantasyonu](#api-dokümantasyonu)
+- [Gerçek Zamanlı (WebSocket)](#gerçek-zamanlı-websocket)
+- [Test ve Debug](#test-ve-debug)
 
-- [Özellikler](#-özellikler)
-- [Teknolojiler](#-teknolojiler)
-- [Mimari](#-mimari)
-- [Proje Yapısı](#-proje-yapısı)
-- [Kurulum & Çalıştırma](#-kurulum--çalıştırma)
-- [Demo Hesapları](#-demo-hesapları)
-- [Ortam Değişkenleri](#-ortam-değişkenleri)
-- [Veritabanı / Migration](#-veritabanı--migration)
-- [Roller & Yetkilendirme](#-roller--yetkilendirme)
-- [API Dokümantasyonu](#-api-dokümantasyonu)
-- [Gerçek Zamanlı (WebSocket)](#-gerçek-zamanlı-websocket)
-- [Test & Debug](#-test--debug)
+## Genel Bilgi
 
----
+### Amaç
 
-## ✨ Özellikler
+Kullanıcıların destek talebi oluşturup takip edebildiği, personelin bu talepleri yönetip yanıtladığı bir sistemdir. Her talep `subject`, `message`, `priority` (low/medium/high), `status` (open/in_progress/closed) ve `createdAt` alanlarını içerir. Kimlik doğrulama JWT ile yapılır; kullanıcılar yalnızca kendi taleplerini, personel ise yetkili oldukları talepleri görür.
 
-**Temel**
-- 🔐 JWT ile kayıt / giriş, **şifremi unuttum** (e-posta ile sıfırlama), **ilk girişte zorunlu şifre değiştirme**
-- 🎟️ Talep CRUD: oluşturma, listeleme, detay, güncelleme, silme
-- 🏷️ Alanlar: konu, açıklama, **öncelik** (low/medium/high), **durum** (open/in_progress/closed), kategori
-- 🔎 Serbest metin **arama** + duruma / önceliğe / departmana göre **filtreleme**, doğru öncelik sıralaması
-- 🔴 `high` öncelikli ve geciken talepler görsel olarak vurgulanır
-
-**Organizasyon & Yetki**
-- 👥 Roller: **Müşteri / Temsilci / Takım Lideri / Yönetici (Admin)**
-- 🏢 **Departmanlar** ve üyelik; talep bir departmana veya departmandaki **belirli kişilere** yönlendirilebilir
-- 👁️ Görünürlük: müşteri → kendi talepleri, personel → departmanı + atananları, admin → tümü
-- 🛡️ Admin: **kullanıcı ekleme/silme**, rol & departman yönetimi (yeni kullanıcıya geçici şifre maili)
-
-**İş Akışı & Otomasyon**
-- 🤖 **Otomatik atama** (departmandaki en az yüklü temsilciye)
-- ⏱️ **SLA takibi** (önceliğe göre yanıt/çözüm hedefi) + **yaşlanma** göstergesi
-- 🔼 **Eskalasyon**: manuel + SLA aşımında **otomatik** (arka plan zamanlayıcı)
-- 💬 **Dahili not** (sadece personel) vs müşteri yanıtı ayrımı
-- ⚡ **Hazır yanıt / makro** (tek tıkla şablon ekleme)
-- 📊 **Tahmini yanıt/çözüm süresi** (geçmiş verilere göre, müşteriye bilgilendirme)
-- 📝 **Audit log** (talep aktivite zaman çizelgesi)
-
-**Gerçek Zamanlı & Bildirim**
-- 🔌 **Socket.IO + Redis** ile anlık güncelleme; canlı yanıt akışı, **"yazıyor…"** ve **kim görüntülüyor** (presence)
-- 🔔 **Anlık toast bildirimleri** + kalıcı **Bildirimler** sayfası (zil + okunmamış rozeti)
-
-**İçerik & Memnuniyet**
-- 📎 **Dosya / fotoğraf ekleri** (görsel önizleme, indirme; görsel/PDF/doküman)
-- ⭐ **CSAT** — talep kapanınca müşteri 1–5 yıldız + yorumla değerlendirir
-
-**Analiz (Yönetici/Admin)**
-- 📈 KPI'lar: toplam, ort. ilk yanıt, ort. çözüm, atanmamış, eskale, **SLA uyum %'si**, **CSAT ortalaması**
-- 📊 Grafikler (Chart.js): zaman trendi, durum/öncelik/departman dağılımı
-- 🏆 **Personel performansı** (çözülen sayısı, ort. yanıt süresi)
-- 🧠 **Tekrarlayan problem analizi** (metin analizi + otomatik tavsiye; ör. "mouse 6 talepte → toplu temin")
-- 📤 **CSV / PDF dışa aktarım**
-
-**Genel**
-- 🌗 **Dark mode** + 🌐 **TR/EN dil desteği** (tercih saklanır)
-- 🎨 Modern kurumsal arayüz (PrimeVue), skeleton yüklemeler, mikro-animasyonlar
-- 🐳 Tek komutla Docker Compose, `/healthz` healthcheck
-
----
-
-## 🛠 Teknolojiler
+### Kullanılan Teknolojiler
 
 | Katman | Teknoloji |
-| ------- | --------- |
-| Frontend | Vue 3, TypeScript, Vite, Pinia, Vue Router, **PrimeVue**, vue-i18n, Chart.js, Socket.IO Client, Axios |
-| Backend | Node.js, Express, TypeScript, **Prisma ORM**, Zod, JWT, bcrypt, **Socket.IO**, Multer, Nodemailer |
+| --- | --- |
+| Frontend | Vue 3, TypeScript, Vite, Pinia, Vue Router, PrimeVue, vue-i18n, Chart.js, Socket.IO Client, Axios |
+| Backend | Node.js, Express, TypeScript, Prisma ORM, Zod, JWT (jsonwebtoken), bcrypt, Socket.IO, Multer, Nodemailer |
 | Veritabanı | PostgreSQL 16 |
-| Cache / Pub-Sub | Redis 7 (Socket.IO adapter) |
-| E-posta (dev) | Mailpit (SMTP yakalayıcı + web UI) |
+| Diğer servisler | Redis 7 (Socket.IO adapter), Mailpit (geliştirme SMTP sunucusu) |
 | Container | Docker, Docker Compose, nginx (frontend statik sunum) |
 
----
+### Yapı
 
-## 🏗 Mimari
+- **Frontend** — Vue 3 + TypeScript SPA. Vite ile derlenip nginx üzerinden sunulur. Pinia ile durum yönetimi, Vue Router ile yönlendirme ve route guard'lar, vue-i18n ile TR/EN dil desteği, PrimeVue ile arayüz bileşenleri kullanılır. API istekleri Axios, gerçek zamanlı iletişim Socket.IO Client ile yapılır.
+- **Backend** — Express + TypeScript REST API. Katmanlı mimari: `routes -> controllers -> services -> prisma`. Kimlik doğrulama JWT, doğrulama Zod ile yapılır. Socket.IO aynı HTTP sunucusuna bağlanır.
+- **Veritabanı** — PostgreSQL. Şema ve migration'lar Prisma ORM ile yönetilir; backend PostgreSQL'e Docker Compose servis adı (`postgres`) üzerinden bağlanır.
 
-```
-┌──────────────┐   HTTP / WebSocket   ┌──────────────┐   Prisma    ┌──────────────┐
-│   Frontend   │ ───────────────────► │   Backend    │ ──────────► │  PostgreSQL  │
-│  Vue 3 + TS  │   (JWT Bearer)       │ Express + TS │             │    :5432     │
-│ :5173 (nginx)│ ◄─────────────────── │    :3000     │ ◄────────── │              │
-└──────────────┘   Socket.IO          └──────┬───────┘             └──────────────┘
-                                              │  ├── Redis  :6379  (Socket.IO pub/sub)
-                                              │  ├── Mailpit :1025/:8025 (e-posta)
-                                              └──── uploads volume (dosya ekleri)
-```
+## Özellikler
 
-Backend katmanlı: `routes → controllers → services → prisma`. Yetki/görünürlük (`services/access.ts`), SLA (`services/sla.ts`), otomatik atama, bildirim, audit ve metin analizi ayrı servislerde.
+Temel (görev gereksinimleri):
 
----
+- JWT ile kayıt ve giriş; kullanıcı yalnızca kendi taleplerini görür.
+- Talep CRUD: oluşturma, listeleme, detay görüntüleme, güncelleme, silme.
+- Duruma ve önceliğe göre filtreleme, serbest metin arama.
+- High öncelikli talepler listede görsel olarak ayırt edilir.
+- Frontend ve backend tarafında form doğrulama; hatalar kullanıcıya gösterilir.
+- `/healthz` healthcheck endpoint'i ve Docker Compose healthcheck tanımları.
 
-## 📁 Proje Yapısı
+Ek olarak geliştirilen özellikler:
+
+- Roller (müşteri, temsilci, takım lideri, yönetici) ve departman bazlı görünürlük/yetkilendirme.
+- Talebin bir departmana veya departmandaki belirli kişilere yönlendirilmesi; en az yüklü temsilciye otomatik atama.
+- SLA takibi (önceliğe göre yanıt/çözüm hedefi), yaşlanma göstergesi; manuel ve SLA aşımında otomatik eskalasyon.
+- Dahili not (yalnızca personel) ile müşteri yanıtı ayrımı, hazır yanıt (makro) şablonları.
+- Dosya/fotoğraf ekleri (görsel önizleme ve indirme).
+- Gerçek zamanlı güncellemeler: canlı yanıt akışı, "yazıyor" göstergesi, kim görüntülüyor bilgisi, anlık bildirimler.
+- Talep kapanışında müşteri memnuniyeti (CSAT) değerlendirmesi.
+- Yönetici/admin için analiz paneli: KPI'lar, grafikler, personel performansı, tekrarlayan problem analizi, SLA uyum oranı, CSV/PDF dışa aktarım.
+- Aktivite/audit kaydı, kullanıcı yönetimi, şifre sıfırlama (e-posta), ilk girişte zorunlu şifre değiştirme.
+- Dark mode, TR/EN dil desteği.
+
+## Proje Yapısı
 
 ```
 .
-├── docker-compose.yml          # postgres, redis, mailpit, backend, frontend
-├── .env.example                # ortam değişkenleri şablonu
+├── docker-compose.yml          postgres, redis, mailpit, backend, frontend
+├── .env.example                ortam değişkenleri şablonu
 ├── README.md
 │
-├── backend/                    # Node.js + Express + TypeScript
+├── backend/                    Node.js + Express + TypeScript
 │   ├── Dockerfile
 │   ├── prisma/
-│   │   ├── schema.prisma        # User, Department, Ticket, Reply, Attachment, Notification, AuditLog, ...
-│   │   └── migrations/          # SQL migration'ları
+│   │   ├── schema.prisma        veri modeli
+│   │   └── migrations/          SQL migration'ları
 │   └── src/
-│       ├── index.ts             # HTTP + Socket.IO sunucusu
-│       ├── app.ts               # Express app & route bağlama
-│       ├── env.ts               # Zod ile env doğrulama
-│       ├── seed.ts              # admin + departman + örnek personel + demo veri
-│       ├── middleware/          # auth (JWT), errorHandler
-│       ├── controllers/         # auth, ticket, department, user, notification, analytics, canned, attachment
-│       ├── services/            # access, sla, autoAssign, estimate, audit, notifications, scheduler, mailer, upload, textAnalysis
-│       ├── realtime/socket.ts   # Socket.IO (odalar, JWT handshake, presence/typing)
+│       ├── index.ts             HTTP + Socket.IO sunucusu
+│       ├── app.ts               Express app, route bağlama
+│       ├── env.ts               Zod ile env doğrulama
+│       ├── seed.ts              admin + departman + örnek veri
+│       ├── middleware/          auth (JWT), errorHandler
+│       ├── controllers/         auth, ticket, department, user, notification, analytics, canned, attachment
+│       ├── services/            access, sla, autoAssign, estimate, audit, notifications, scheduler, mailer, upload, textAnalysis
+│       ├── realtime/socket.ts   Socket.IO (oda, JWT handshake, presence/typing)
 │       └── routes/
 │
-└── frontend/                   # Vue 3 + TypeScript + Vite
-    ├── Dockerfile + nginx.conf
+└── frontend/                   Vue 3 + TypeScript + Vite
+    ├── Dockerfile, nginx.conf
     └── src/
         ├── router/ stores/ services/ composables/ i18n/
-        ├── components/          # PriorityTag, SlaBadge, AttachmentList, CannedMenu, RealtimeBridge, ...
+        ├── components/          PriorityTag, SlaBadge, AttachmentList, CannedMenu, RealtimeBridge, ...
         ├── layouts/AppLayout.vue
-        └── views/               # Login, Register, Forgot/Reset/ChangePassword, Tickets, TicketDetail,
-                                  #  Departments, Users, Notifications, Analytics
+        └── views/               Login, Register, ForgotPassword, ResetPassword, ChangePassword,
+                                  Tickets, TicketDetail, Departments, Users, Notifications, Analytics
 ```
 
----
+## Kurulum ve Çalıştırma
 
-## 🚀 Kurulum & Çalıştırma
+Önkoşul: Docker ve Docker Compose.
 
-**Önkoşul:** Docker & Docker Compose.
+### 1. .env dosyasını hazırlama
+
+Ortam değişkenleri `.env` dosyası ile yönetilir. Şablonu kopyalayın:
 
 ```bash
-# 1) .env dosyasını oluştur
 cp .env.example .env
+```
 
-# 2) Tüm servisleri tek komutla ayağa kaldır
+`.env` içindeki değerler yerel geliştirme için hazır gelir; `JWT_SECRET` gibi değerleri gerçek bir ortamda değiştirin. (`.env` dosyası git'e dahil edilmez; `.env.example` ise şablon olarak repoda bulunur.)
+
+### 2. Docker Compose ile çalıştırma
+
+```bash
 docker compose up --build
 ```
 
-İlk açılışta backend otomatik olarak: **migration'ları uygular**, **seed** (admin, departmanlar, örnek personel, demo talepler) çalıştırır ve API'yi başlatır.
+Bu komut postgres, redis, mailpit, backend ve frontend servislerini ayağa kaldırır.
+
+### 3. Veritabanı tabloları
+
+Backend açılışta migration'ları otomatik uygular (`prisma migrate deploy`) ve örnek veriyi (admin kullanıcı, departmanlar, örnek personel ve demo talepler) ekler. Manuel işlemler:
+
+```bash
+# Migration'ları elle uygulamak
+docker compose exec backend npx prisma migrate deploy
+
+# Veriye göz atmak (Prisma Studio)
+docker compose exec backend npx prisma studio
+
+# Şemayı sıfırdan kurmak (tüm veriyi siler)
+docker compose down -v && docker compose up --build
+```
 
 ### Servisler
 
 | Servis | URL | Not |
-| ------ | --- | --- |
+| --- | --- | --- |
 | Frontend | http://localhost:5173 | Vue arayüzü |
 | Backend | http://localhost:3000 | REST API + WebSocket |
 | PostgreSQL | localhost:5432 | postgres / postgres |
 | Redis | localhost:6379 | Socket.IO adapter |
-| **Mailpit** | **http://localhost:8025** | Gönderilen tüm e-postalar burada görünür |
+| Mailpit | http://localhost:8025 | Gönderilen e-postalar burada görüntülenir |
 
----
+## Ortam Değişkenleri
 
-## 👤 Demo Hesapları
-
-| Rol | E-posta | Şifre |
-| --- | ------- | ----- |
-| **Yönetici (Admin)** | `admin@support.local` | `Admin123!` |
-| Takım Lideri (Teknik) | `tech.lead@support.local` | `Agent123!` |
-| Temsilci (Teknik) | `tech.agent@support.local` | `Agent123!` |
-| Temsilci (Faturalama) | `billing.agent@support.local` | `Agent123!` |
-| Temsilci (Satış) | `sales.agent@support.local` | `Agent123!` |
-| Müşteri | `musteri1@firma.com` … `musteri10@firma.com` | `User123!` |
-
-> Yeni müşteri için **Kayıt** ekranını da kullanabilirsiniz. Admin'in oluşturduğu kullanıcıların geçici şifresi **Mailpit**'e (`:8025`) düşer.
-
----
-
-## 🔐 Ortam Değişkenleri
-
-Tümü `.env.example` içinde belgelidir. Öne çıkanlar:
+Tümü `.env.example` içinde açıklamalıdır. Başlıcaları:
 
 ```env
 DATABASE_URL=postgresql://postgres:postgres@postgres:5432/support_db
 JWT_SECRET=change_me_to_a_long_random_secret
+JWT_EXPIRES_IN=7d
+PORT=3000
 CORS_ORIGIN=http://localhost:5173,http://127.0.0.1:5173
 ADMIN_EMAIL=admin@support.local
 ADMIN_PASSWORD=Admin123!
 REDIS_URL=redis://redis:6379
 SMTP_HOST=mailpit
 SMTP_PORT=1025
+MAIL_FROM=Destek Merkezi <no-reply@support.local>
 APP_URL=http://localhost:5173
 MAX_UPLOAD_MB=10
 VITE_API_URL=http://localhost:3000
 ```
 
----
+## Veritabanı ve Migration
 
-## 🗄 Veritabanı / Migration
+Şema Prisma ile yönetilir. Başlıca tablolar:
 
-Şema **Prisma** ile yönetilir; migration'lar açılışta **otomatik** uygulanır (`prisma migrate deploy`).
+| Tablo | Açıklama |
+| --- | --- |
+| `users` | Kullanıcı (email, parola hash, rol) |
+| `departments`, `department_members` | Departmanlar ve üyelikleri |
+| `tickets` | Talepler (subject, message, priority, status, createdAt, SLA alanları) |
+| `ticket_assignees` | Talep-temsilci atamaları |
+| `ticket_replies` | Yanıtlar ve dahili notlar |
+| `attachments` | Dosya ekleri (meta veri; dosyalar volume'da) |
+| `notifications` | Kalıcı bildirimler |
+| `canned_responses` | Hazır yanıt şablonları |
+| `audit_logs` | Aktivite kaydı |
+| `password_reset_tokens` | Şifre sıfırlama token'ları |
 
-```bash
-# Manuel uygulama
-docker compose exec backend npx prisma migrate deploy
+Enum değerleri: `priority` = low/medium/high, `status` = open/in_progress/closed, `role` = user/agent/team_lead/admin.
 
-# Şemayı sıfırdan kurmak (TÜM veriyi siler)
-docker compose down -v && docker compose up --build
+## Demo Hesapları
 
-# Prisma Studio ile veriye göz atmak
-docker compose exec backend npx prisma studio
-```
+| Rol | E-posta | Şifre |
+| --- | --- | --- |
+| Yönetici (Admin) | admin@support.local | Admin123! |
+| Takım Lideri (Teknik) | tech.lead@support.local | Agent123! |
+| Temsilci (Teknik) | tech.agent@support.local | Agent123! |
+| Temsilci (Faturalama) | billing.agent@support.local | Agent123! |
+| Müşteri | musteri1@firma.com ... musteri10@firma.com | User123! |
 
-Başlıca tablolar: `users`, `departments`, `department_members`, `tickets`, `ticket_assignees`, `ticket_replies`, `attachments`, `notifications`, `canned_responses`, `audit_logs`, `password_reset_tokens`.
+Kayıt ekranından yeni müşteri de oluşturulabilir. Admin'in oluşturduğu kullanıcıların geçici şifresi Mailpit'e (http://localhost:8025) düşer.
 
----
-
-## 👥 Roller & Yetkilendirme
+## Roller ve Yetkilendirme
 
 | Yetenek | Müşteri | Temsilci | Takım Lideri | Admin |
-| ------- | :-----: | :------: | :----------: | :---: |
-| Talep oluşturma | ✅ | ✅ | ✅ | ✅ |
-| Talepleri görme | Kendi | Departmanı + atananları | Departmanı | **Tümü** |
-| Yanıt verme | Kendi talebinde | ✅ | ✅ | ✅ |
-| Dahili not | — | ✅ | ✅ | ✅ |
-| Atama / durum değiştirme | — | ✅ | ✅ | ✅ |
-| Eskalasyon | — | ✅ | ✅ | ✅ |
-| Hazır yanıt (makro) | — | ✅ | ✅ | ✅ |
-| CSAT (değerlendirme) | ✅ (kapanışta) | — | — | — |
-| Analiz paneli | — | — | ✅ (kendi departmanı) | ✅ (tümü) |
-| Departman / kullanıcı yönetimi | — | — | — | ✅ |
+| --- | :---: | :---: | :---: | :---: |
+| Talep oluşturma | Evet | Evet | Evet | Evet |
+| Talepleri görme | Kendi | Departmanı + atananları | Departmanı | Tümü |
+| Yanıt verme | Kendi talebinde | Evet | Evet | Evet |
+| Dahili not | - | Evet | Evet | Evet |
+| Atama / durum değiştirme | - | Evet | Evet | Evet |
+| Eskalasyon | - | Evet | Evet | Evet |
+| CSAT değerlendirme | Evet (kapanışta) | - | - | - |
+| Analiz paneli | - | - | Kendi departmanı | Tümü |
+| Departman / kullanıcı yönetimi | - | - | - | Evet |
 
-> Admin bir talebe yanıt verdiğinde, talep `open` ise otomatik `in_progress`'e geçer. SLA çözüm süresi aşılan talepler otomatik eskale edilir.
+## API Dokümantasyonu
 
----
+Base URL: `http://localhost:3000`. Kimlik gerektiren uçlarda header: `Authorization: Bearer <token>`.
 
-## 📡 API Dokümantasyonu
+### Auth endpoint'leri
 
-Base URL: `http://localhost:3000` — Kimlik gerektiren uçlarda header: `Authorization: Bearer <token>`
-
-### Auth
 | Method | Endpoint | Açıklama |
-| ------ | -------- | -------- |
-| POST | `/auth/register` | Kayıt → `{ token, user }` |
-| POST | `/auth/login` | Giriş → `{ token, user }` |
-| GET | `/auth/me` | Mevcut kullanıcı |
-| POST | `/auth/change-password` | Şifre değiştir (auth) |
-| POST | `/auth/forgot-password` | Sıfırlama maili gönder |
-| POST | `/auth/reset-password` | Token ile yeni şifre |
+| --- | --- | --- |
+| POST | /auth/register | Kullanıcı kaydı |
+| POST | /auth/login | Kullanıcı girişi |
+| GET | /auth/me | Mevcut kullanıcı |
+| POST | /auth/change-password | Şifre değiştirme (oturum gerektirir) |
+| POST | /auth/forgot-password | Sıfırlama bağlantısı gönderir |
+| POST | /auth/reset-password | Token ile yeni şifre |
 
-### Tickets
+### Ticket endpoint'leri
+
 | Method | Endpoint | Açıklama |
-| ------ | -------- | -------- |
-| GET | `/tickets` | Listele (filtreler: `status, priority, departmentId, scope, search`) |
-| GET | `/tickets/:id` | Detay (+ yanıtlar, ekler, SLA) |
-| POST | `/tickets` | Oluştur (otomatik atama) |
-| PUT | `/tickets/:id` | Güncelle |
-| DELETE | `/tickets/:id` | Sil |
-| PATCH | `/tickets/:id/assign` | Atama (personel) |
-| PATCH | `/tickets/:id/escalate` | Eskale et (personel) |
-| POST | `/tickets/:id/replies` | Yanıt / dahili not |
-| POST | `/tickets/:id/attachments` | Dosya yükle (multipart) |
-| POST | `/tickets/:id/csat` | Memnuniyet değerlendir (müşteri) |
-| GET | `/tickets/:id/activity` | Audit / aktivite geçmişi |
-| GET | `/tickets/estimate` | Tahmini süre (`priority, departmentId`) |
+| --- | --- | --- |
+| GET | /tickets | Talepleri listeleme (filtreler: status, priority, departmentId, search) |
+| GET | /tickets/:id | Talep detayını görüntüleme |
+| POST | /tickets | Talep oluşturma |
+| PUT | /tickets/:id | Talep güncelleme |
+| DELETE | /tickets/:id | Talep silme |
+| PATCH | /tickets/:id/assign | Atama (personel) |
+| PATCH | /tickets/:id/escalate | Eskalasyon (personel) |
+| POST | /tickets/:id/replies | Yanıt veya dahili not |
+| POST | /tickets/:id/attachments | Dosya yükleme (multipart) |
+| POST | /tickets/:id/csat | Memnuniyet değerlendirmesi (müşteri) |
+| GET | /tickets/:id/activity | Aktivite/audit geçmişi |
+| GET | /healthz | Healthcheck |
 
-### Diğer
-| Method | Endpoint | Açıklama |
-| ------ | -------- | -------- |
-| GET/POST/PUT/DELETE | `/departments` | Departman yönetimi (admin) |
-| GET/POST/PUT/DELETE | `/users` | Kullanıcı yönetimi (admin) |
-| GET | `/notifications`, `/notifications/unread-count` | Bildirimler |
-| GET/POST/PUT/DELETE | `/canned` | Hazır yanıtlar (personel) |
-| GET | `/attachments/:id` | Dosya indir (yetkili) |
-| GET | `/analytics` | İstatistik (yönetici/admin) |
-| GET | `/healthz` | Healthcheck → `{ "status": "ok" }` |
+Diğer: `/departments`, `/users`, `/notifications`, `/canned`, `/attachments/:id`, `/analytics`.
 
-#### Örnek: Talep oluşturma
+### Örnek request/response
+
+Kayıt:
+
 ```jsonc
-// POST /tickets
-{ "subject": "VPN bağlanmıyor", "message": "Uzaktan erişim çalışmıyor", "priority": "high", "departmentId": "<uuid>" }
-// → { "ticket": { "id": "...", "status": "open", "assignees": [...], "sla": { "breached": false, ... } } }
+// POST /auth/register
+{ "email": "user@firma.com", "password": "secret123" }
+
+// 201
+{
+  "token": "eyJhbGciOi...",
+  "user": { "id": "uuid", "email": "user@firma.com", "role": "user" }
+}
 ```
 
-#### Hata formatı
+Giriş:
+
 ```jsonc
+// POST /auth/login
+{ "email": "user@firma.com", "password": "secret123" }
+
+// 200
+{ "token": "eyJhbGciOi...", "user": { "id": "uuid", "email": "user@firma.com", "role": "user" } }
+```
+
+Talep oluşturma:
+
+```jsonc
+// POST /tickets   (Authorization: Bearer <token>)
+{ "subject": "Giriş yapamıyorum", "message": "Şifre sıfırlama çalışmıyor", "priority": "high" }
+
+// 201
+{
+  "ticket": {
+    "id": "uuid",
+    "subject": "Giriş yapamıyorum",
+    "message": "Şifre sıfırlama çalışmıyor",
+    "priority": "high",
+    "status": "open",
+    "userId": "uuid",
+    "createdAt": "2026-06-09T08:00:00.000Z",
+    "sla": { "breached": false, "ageMinutes": 0, "resolutionRemainingMinutes": 240 }
+  }
+}
+```
+
+Talepleri listeleme:
+
+```jsonc
+// GET /tickets?status=open&priority=high
+{ "tickets": [ { "id": "uuid", "subject": "...", "priority": "high", "status": "open", ... } ] }
+```
+
+Healthcheck:
+
+```jsonc
+// GET /healthz
+{ "status": "ok" }
+```
+
+Hata yanıtı formatı:
+
+```jsonc
+// 422 doğrulama hatası
 { "error": "Validation failed", "details": { "email": ["A valid email is required"] } }
+
+// 401 / 403 / 404
+{ "error": "Invalid email or password" }
 ```
 
----
+## Gerçek Zamanlı (WebSocket)
 
-## 🔌 Gerçek Zamanlı (WebSocket)
+Socket.IO, backend ile aynı HTTP sunucusu (port 3000) üzerinde çalışır. Kimlik doğrulama, WebSocket handshake'in `auth` payload'ı ile yapılır:
 
-Socket.IO `http://localhost:3000` üzerinde çalışır; JWT **handshake `auth` payload** ile doğrulanır:
 ```js
 io('http://localhost:3000', { auth: { token } })
 ```
-Odalar: `user:{id}` · `dept:{id}` · `ticket:{id}` · `ticket:{id}:staff` (dahili notlar). Başlıca olaylar: `ticket:created/updated/deleted`, `ticket:reply`, `notification`, `typing`, `presence`. Çok-instance ölçeklemesi **Redis adapter** ile çözülür.
 
----
+Odalar: `user:{id}`, `dept:{id}`, `ticket:{id}`, `ticket:{id}:staff` (dahili notlar). Başlıca olaylar: `ticket:created`, `ticket:updated`, `ticket:deleted`, `ticket:reply`, `notification`, `typing`, `presence`. Çok instance'lı ölçekleme Redis adapter ile sağlanır.
 
-## 🧪 Test & Debug
+## Test ve Debug
 
 ```bash
-docker compose ps                 # servis durumları
-docker compose logs -f backend    # backend logları
-docker compose logs -f postgres
-curl http://localhost:3000/healthz   # → {"status":"ok"}
+# Servis durumları
+docker compose ps
+
+# Loglar
+docker compose logs backend
+docker compose logs postgres
+
+# Healthcheck
+curl http://localhost:3000/healthz
 ```
 
-### Hızlı API denemesi
+Hızlı API denemesi:
+
 ```bash
-# Giriş (token al)
+# Giriş yapıp token al
 TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"admin@support.local","password":"Admin123!"}' \
@@ -324,23 +358,10 @@ TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
 curl http://localhost:3000/tickets -H "Authorization: Bearer $TOKEN"
 ```
 
-### Demo senaryosu
-1. **Müşteri** ile bir talep oluştur (Teknik Destek) → otomatik bir temsilciye atanır.
-2. **tech.agent** ile gir → anlık bildirim + canlı liste; talebe yanıt ver, dahili not bırak, hazır yanıt kullan.
-3. **admin** ile **Analiz** sekmesini aç → SLA uyumu, CSAT, tekrarlayan problemler + tavsiyeler.
-4. Müşteri tarafında talep kapanınca **CSAT** ile değerlendir.
+Sık karşılaşılan durumlar:
 
-### Sık sorunlar
 | Belirti | Çözüm |
-| ------- | ----- |
-| Port çakışması (3000/5173/5432/6379/8025) | Çakışan yerel servisi durdurun ya da compose'da portu değiştirin |
+| --- | --- |
+| Port çakışması (3000/5173/5432) | Çakışan yerel servisi durdurun veya docker-compose.yml'de portu değiştirin |
 | Şemayı sıfırlamak | `docker compose down -v && docker compose up --build` |
-| E-postalar nerede? | **Mailpit**: http://localhost:8025 |
-
----
-
-## 📦 Tek Komut Özeti
-
-```bash
-cp .env.example .env && docker compose up --build
-```
+| Gönderilen e-postalar | Mailpit arayüzü: http://localhost:8025 |
