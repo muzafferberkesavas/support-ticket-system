@@ -15,7 +15,8 @@ docker compose up --build
 "HTTPS" bölümüne bakın). Yerel API/arayüz portları da açıktır:
 Frontend: http://localhost:5173 — Backend: http://localhost:3000
 
-> Kod yapısını ve mimariyi ayrıntılı anlatan teknik rehber: [docs/MIMARI.md](docs/MIMARI.md)
+> Kod yapısını ve mimariyi ayrıntılı anlatan teknik rehber: [docs/MIMARI.md](docs/MIMARI.md) ·
+> Geliştirme/katkı kuralları: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## İçindekiler
 
