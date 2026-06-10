@@ -384,6 +384,11 @@ export default {
     jobsSubtitle: 'A worker service running on Bull + Redis. The daily digest email is sent automatically each day; you can trigger it now below.',
     runDigest: 'Send daily digest now',
     digestQueued: 'Digest job queued; the worker is sending it (Mailpit).',
+    exportTitle: 'Ticket Export (File Microservice)',
+    exportSubtitle: 'Tickets are rendered as Excel/PDF by a separate file microservice with no database connection. The backend calls it and returns the file.',
+    downloadExcel: 'Download Excel',
+    downloadPdf: 'Download PDF',
+    exportError: 'Could not generate file',
   },
   cmd: {
     placeholder: 'Search tickets or jump to a page...',

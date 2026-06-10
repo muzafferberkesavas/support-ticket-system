@@ -148,8 +148,10 @@ docker compose down -v && docker compose up --build
 
 | Servis | URL | Not |
 | --- | --- | --- |
-| Frontend | http://localhost:5173 | Vue arayüzü |
-| Backend | http://localhost:3000 | REST API + WebSocket |
+| **Proxy (HTTPS)** | **https://support.local** | Ürünün asıl adresi — self-signed TLS reverse proxy |
+| Frontend | (proxy arkasında) | Vue arayüzü, proxy `/` ile sunar |
+| Backend | https://support.local/api · http://localhost:3000 | REST API + WebSocket |
+| **file-service** | (iç ağ, port 4000) | Excel/PDF üreten mikroservis — **DB bağlantısı YOK** |
 | Worker | http://localhost:3001/admin/queues | Bağımsız Bull worker + Bull Board kuyruk paneli |
 | PostgreSQL | localhost:5432 | postgres / postgres |
 | Redis | localhost:6379 | Socket.IO adapter + Bull kuyruğu |
@@ -157,6 +159,41 @@ docker compose down -v && docker compose up --build
 E-postalar gerçek bir SMTP sunucusu (örn. Gmail) ile gönderilir; kurulum için aşağıdaki
 "Gerçek SMTP" bölümüne bakın. SMTP yapılandırılmazsa uygulama çalışır, yalnızca e-posta
 gönderimi devre dışı kalır.
+
+### HTTPS — kendi domain üzerinden (self-signed)
+
+Ürün, `support.local` domaini üzerinden HTTPS ile sunulur (nginx reverse proxy + self-signed
+sertifika). Tek seferlik kurulum:
+
+```bash
+# 1) Self-signed sertifikayı üret (certs/ altına yazılır, git'e dahil edilmez)
+./scripts/gen-certs.sh
+
+# 2) Domaini yerel olarak çözümle — /etc/hosts'a ekle:
+#    127.0.0.1 support.local
+echo "127.0.0.1 support.local" | sudo tee -a /etc/hosts
+
+# 3) Stack'i ayağa kaldır
+docker compose up -d --build
+```
+
+Ardından tarayıcıda **https://support.local** açılır (self-signed olduğu için ilk
+girişte tarayıcı güvenlik uyarısını kabul edin). Proxy yönlendirmeleri: `/` → frontend,
+`/api/` → backend, `/api/socket.io/` → WebSocket. HTTP (80) otomatik olarak HTTPS'e (443)
+yönlendirilir.
+
+### Dosya üretim mikroservisi (`file-service`)
+
+Talepler **Excel** ve **PDF** olarak, veritabanı bağlantısı bulunmayan ayrı bir
+mikroservis tarafından üretilir. Backend/worker bu servise HTTP isteği atar, cevap
+olarak dosyayı (binary) alır:
+
+- **Senkron indirme:** Ayarlar sayfasındaki "Excel indir / PDF indir" butonları
+  `POST /api/jobs/export/download` → backend → file-service → dosya anında iner.
+- **E-posta ile (async):** `POST /api/jobs/export` worker'a iş bırakır; worker
+  file-service'ten dosyayı alıp e-postaya ekler (`format`: `csv` | `excel` | `pdf`).
+
+Mikroservisin kendi dokümantasyonu için `file-service/README.md` dosyasına bakın.
 
 ## Ortam Değişkenleri
 

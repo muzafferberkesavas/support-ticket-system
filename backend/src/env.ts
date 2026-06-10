@@ -25,6 +25,9 @@ const envSchema = z.object({
   APP_URL: z.string().default('http://localhost:5173'),
   UPLOAD_DIR: z.string().default('/app/uploads'),
   MAX_UPLOAD_MB: z.coerce.number().default(10),
+  // Dosya üretim mikroservisi (Excel/PDF). Backend bu URL'ye istek atar; DB'si yok.
+  FILE_SERVICE_URL: z.string().default('http://file-service:4000'),
+  FILE_SERVICE_TOKEN: z.string().optional().default(''),
   // Worker: cron schedule for the daily digest job (default 08:00 every day).
   DIGEST_CRON: z.string().default('0 8 * * *'),
   // Worker: SLA auto-escalation + stale-reminder sweep cron (default every 2 min).

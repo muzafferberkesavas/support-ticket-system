@@ -384,6 +384,11 @@ export default {
     jobsSubtitle: 'Bull + Redis ile çalışan worker servisi. Günlük özet maili her gün otomatik gönderilir; aşağıdan hemen tetikleyebilirsiniz.',
     runDigest: 'Günlük özeti şimdi gönder',
     digestQueued: 'Günlük özet işi kuyruğa alındı; worker gönderiyor (Mailpit).',
+    exportTitle: 'Talep Dışa Aktarımı (Dosya Mikroservisi)',
+    exportSubtitle: 'Talepler, veritabanı bağlantısı olmayan ayrı bir dosya mikroservisinde Excel/PDF olarak üretilir. Backend bu servise istek atıp dosyayı döndürür.',
+    downloadExcel: 'Excel indir',
+    downloadPdf: 'PDF indir',
+    exportError: 'Dosya üretilemedi',
   },
   cmd: {
     placeholder: 'Talep ara veya bir sayfaya git...',

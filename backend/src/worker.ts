@@ -24,7 +24,8 @@ import {
 } from './services/mailer';
 import { runSlaSweep } from './services/slaSweep';
 import { refreshSlaTargets } from './services/sla';
-import { buildTicketScope } from './services/access';
+import { buildExportData, buildCsv } from './services/exportData';
+import { generateFile, FILE_META, type FileFormat } from './services/fileService';
 import { env } from './env';
 
 // ── Daily digest: per-staff summary of open / overdue / unassigned work ──
@@ -63,25 +64,6 @@ async function computeDigests(): Promise<Digest[]> {
   return digests;
 }
 
-// ── CSV builder for the export job ───────────────────────────────────
-function csvCell(v: unknown): string {
-  const s = v == null ? '' : String(v);
-  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
-function buildTicketsCsv(tickets: any[]): string {
-  const head = ['Konu', 'Talep Sahibi', 'Departman', 'Öncelik', 'Durum', 'Etiketler', 'Oluşturulma'];
-  const rows = tickets.map((t) => [
-    t.subject,
-    t.user?.fullName || t.user?.email || '',
-    t.department?.name || '',
-    t.priority,
-    t.status,
-    (t.tags || []).join('; '),
-    t.createdAt.toISOString(),
-  ]);
-  return [head, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n');
-}
-
 // ── Job processors ───────────────────────────────────────────────────
 mailQueue.process(JOB_REPLY_EMAIL, async (job) => {
   const d = job.data as ReplyEmailJob;
@@ -117,30 +99,31 @@ mailQueue.process(JOB_CSAT_REQUEST, async (job) => {
 
 mailQueue.process(JOB_EXPORT, async (job) => {
   const d = job.data as ExportJob;
-  const scope = await buildTicketScope({ id: d.requesterId, email: d.email, role: d.requesterRole });
-  const f: any[] = [];
-  if (d.filters.status) f.push({ status: d.filters.status });
-  if (d.filters.priority) f.push({ priority: d.filters.priority });
-  if (d.filters.departmentId) f.push({ departmentId: d.filters.departmentId });
-  if (d.filters.tag) f.push({ tags: { has: d.filters.tag } });
-  if (d.filters.search) {
-    f.push({
-      OR: [
-        { subject: { contains: d.filters.search, mode: 'insensitive' } },
-        { message: { contains: d.filters.search, mode: 'insensitive' } },
-      ],
+  const { columns, rows, count } = await buildExportData(
+    { id: d.requesterId, email: d.email, role: d.requesterRole },
+    d.filters,
+  );
+  const format = d.format || 'csv';
+
+  if (format === 'csv') {
+    // CSV worker içinde yerel üretilir (mikroservise gerek yok).
+    const csv = buildCsv(columns, rows);
+    await sendExportEmail(d.email, d.requestedByName, csv, 'talepler-export.csv', count);
+  } else {
+    // Excel/PDF file-service mikroservisinden alınır (backend → servis → dosya).
+    const fmt = format as FileFormat;
+    const { ext, contentType } = FILE_META[fmt];
+    const filename = `talepler-export.${ext}`;
+    const file = await generateFile(fmt, {
+      title: 'Talep Dışa Aktarımı',
+      filename,
+      sheetName: 'Talepler',
+      columns,
+      rows,
     });
+    await sendExportEmail(d.email, d.requestedByName, file, filename, count, contentType);
   }
-  const where = f.length ? { AND: [scope, ...f] } : scope;
-  const tickets = await prisma.ticket.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    take: 5000,
-    include: { user: { select: { fullName: true, email: true } }, department: { select: { name: true } } },
-  });
-  const csv = buildTicketsCsv(tickets);
-  await sendExportEmail(d.email, d.requestedByName, csv, 'talepler-export.csv', tickets.length);
-  return { count: tickets.length };
+  return { count, format };
 });
 
 mailQueue.on('failed', (job, err) => {

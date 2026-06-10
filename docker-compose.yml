@@ -53,6 +53,8 @@ services:
       UPLOAD_DIR: /app/uploads
       MAX_UPLOAD_MB: ${MAX_UPLOAD_MB}
       DIGEST_CRON: ${DIGEST_CRON}
+      FILE_SERVICE_URL: ${FILE_SERVICE_URL}
+      FILE_SERVICE_TOKEN: ${FILE_SERVICE_TOKEN}
     volumes:
       - uploads:/app/uploads
     ports:
@@ -61,6 +63,8 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      file-service:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:3000/healthz || exit 1"]
@@ -96,6 +100,8 @@ services:
       BULLBOARD_PORT: ${BULLBOARD_PORT}
       BULLBOARD_USER: ${BULLBOARD_USER}
       BULLBOARD_PASS: ${BULLBOARD_PASS}
+      FILE_SERVICE_URL: ${FILE_SERVICE_URL}
+      FILE_SERVICE_TOKEN: ${FILE_SERVICE_TOKEN}
     ports:
       - "3001:3001" # Bull Board (queue dashboard)
     depends_on:
@@ -103,6 +109,25 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      file-service:
+        condition: service_healthy
+
+  # Dosya üretim mikroservisi — sadece Excel/PDF üretir, VERİTABANI BAĞLANTISI
+  # YOKTUR. Backend ve worker bu servise HTTP ile istek atar (port 4000).
+  file-service:
+    build:
+      context: ./file-service
+    container_name: support_file_service
+    restart: unless-stopped
+    environment:
+      PORT: "4000"
+      FILE_SERVICE_TOKEN: ${FILE_SERVICE_TOKEN}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   frontend:
     build:
@@ -111,11 +136,30 @@ services:
         VITE_API_URL: ${VITE_API_URL}
     container_name: support_frontend
     restart: unless-stopped
-    ports:
-      - "5173:80"
+    expose:
+      - "80"
     depends_on:
       backend:
         condition: service_healthy
+
+  # HTTPS reverse proxy — ürünü kendi domain'imiz (support.local) üzerinden
+  # self-signed sertifika ile yayınlar. /api → backend, /api/socket.io → backend
+  # (websocket), / → frontend. 80 portu 443'e yönlendirir.
+  proxy:
+    image: nginx:alpine
+    container_name: support_proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_started
 
 volumes:
   pgdata:

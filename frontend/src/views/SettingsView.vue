@@ -60,6 +60,19 @@ async function runDigest() {
   }
 }
 
+// Dosya mikroservisinden senkron Excel/PDF indirme.
+const exportBusy = ref<'excel' | 'pdf' | null>(null);
+async function download(format: 'excel' | 'pdf') {
+  exportBusy.value = format;
+  try {
+    await jobsService.downloadExport(format);
+  } catch (err) {
+    toast.add({ severity: 'error', summary: t('settings.exportError'), detail: extractErrorMessage(err), life: 4000 });
+  } finally {
+    exportBusy.value = null;
+  }
+}
+
 onMounted(load);
 </script>
 
@@ -109,6 +122,31 @@ onMounted(load);
       />
     </template>
   </Card>
+
+  <Card style="max-width: 560px; margin-top: 1.25rem">
+    <template #title>{{ t('settings.exportTitle') }}</template>
+    <template #content>
+      <p class="muted" style="margin-top: -0.4rem">{{ t('settings.exportSubtitle') }}</p>
+      <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap">
+        <Button
+          :label="t('settings.downloadExcel')"
+          icon="pi pi-file-excel"
+          outlined
+          :loading="exportBusy === 'excel'"
+          :disabled="exportBusy !== null"
+          @click="download('excel')"
+        />
+        <Button
+          :label="t('settings.downloadPdf')"
+          icon="pi pi-file-pdf"
+          outlined
+          :loading="exportBusy === 'pdf'"
+          :disabled="exportBusy !== null"
+          @click="download('pdf')"
+        />
+      </div>
+    </template>
+  </Card>
 </template>
 
 <style scoped>
@@ -118,6 +156,19 @@ onMounted(load);
   gap: 0.75rem;
   align-items: center;
   margin-top: 0.75rem;
+}
+/* Grid çocuklarının min-width:auto değeri 1fr sütunların küçülmesini engelleyip
+   input'ların kart dışına taşmasına (grid blowout) yol açıyordu; sıfırla. */
+.sla-grid > * {
+  min-width: 0;
+}
+/* InputNumber kök öğesi ve içindeki input sütunu tam doldursun. */
+.sla-grid :deep(.p-inputnumber) {
+  width: 100%;
+}
+.sla-grid :deep(.p-inputnumber-input) {
+  width: 100%;
+  min-width: 0;
 }
 .sla-head {
   margin-top: 1rem;

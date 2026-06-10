@@ -2,12 +2,19 @@ import { io, type Socket } from 'socket.io-client';
 import { ref } from 'vue';
 import { getStoredToken } from './api';
 
-const URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// VITE_API_URL bir yol öneki içerebilir (ör. https://support.local/api).
+// Socket.IO'da bu öneki path olarak vermezsek namespace sanılır; bu yüzden
+// origin ile öneki ayırıp Socket.IO path'ini "<önek>/socket.io" yapıyoruz.
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const parsed = new globalThis.URL(API_URL, globalThis.location?.origin ?? 'http://localhost');
+const SOCKET_ORIGIN = parsed.origin;
+const SOCKET_PATH = `${parsed.pathname.replace(/\/$/, '')}/socket.io`;
 
 export const socketConnected = ref(false);
 
 // Single shared client. Token is read lazily so reconnects use the latest one.
-export const socket: Socket = io(URL, {
+export const socket: Socket = io(SOCKET_ORIGIN, {
+  path: SOCKET_PATH,
   autoConnect: false,
   transports: ['websocket', 'polling'],
   auth: (cb) => cb({ token: getStoredToken() }),

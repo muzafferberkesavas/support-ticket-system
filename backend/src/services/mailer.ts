@@ -148,20 +148,26 @@ export async function sendCsatEmail(to: string, ticketId: string, ticketSubject:
   await send(to, 'Destek Merkezi — Memnuniyet değerlendirmesi', html);
 }
 
+// Dışa aktarım e-postası. İçerik CSV (string) ya da file-service'ten gelen
+// Excel/PDF (Buffer) olabilir; contentType buna göre verilir.
 export async function sendExportEmail(
   to: string,
   name: string | null,
-  csv: string,
+  content: string | Buffer,
   filename: string,
   count: number,
+  contentType = 'text/csv; charset=utf-8',
 ): Promise<void> {
   const html = layout(
     `Dışa aktarımınız hazır${name ? ', ' + name : ''}`,
     `<p style="color:#374151;line-height:1.6">İstediğiniz talep dışa aktarımı tamamlandı (<strong>${count}</strong> kayıt).
-     CSV dosyası bu e-postaya eklenmiştir: <code>${filename}</code></p>`,
+     Dosya bu e-postaya eklenmiştir: <code>${filename}</code></p>`,
   );
+  // CSV ise Excel'in UTF-8 okuyabilmesi için BOM ekle; binary (Buffer) olduğu
+  // gibi gönderilir.
+  const attachmentContent = typeof content === 'string' ? '﻿' + content : content;
   await send(to, 'Destek Merkezi — Talep dışa aktarımı', html, [
-    { filename, content: '﻿' + csv, contentType: 'text/csv; charset=utf-8' },
+    { filename, content: attachmentContent, contentType },
   ]);
 }
 

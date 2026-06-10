@@ -27,3 +27,6 @@ pgdata/
 
 # Local file uploads (served from a Docker volume in prod)
 uploads/
+
+# TLS sertifikaları — private key repoya KOYULMAZ (scripts/gen-certs.sh üretir)
+certs/
