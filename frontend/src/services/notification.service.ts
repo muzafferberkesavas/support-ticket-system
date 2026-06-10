@@ -3,9 +3,7 @@ import type { AppNotification } from '@/types';
 
 export const notificationService = {
   async list(): Promise<{ notifications: AppNotification[]; unreadCount: number }> {
-    const { data } = await api.get<{ notifications: AppNotification[]; unreadCount: number }>(
-      '/notifications',
-    );
+    const { data } = await api.get<{ notifications: AppNotification[]; unreadCount: number }>('/notifications');
     return data;
   },
   async unreadCount(): Promise<number> {

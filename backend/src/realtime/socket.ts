@@ -16,7 +16,7 @@ const ticketRoom = (id: string) => `ticket:${id}`;
 const ticketStaffRoom = (id: string) => `ticket:${id}:staff`;
 const ADMIN_ROOM = 'role:admin';
 
-interface SocketUser extends Principal {}
+type SocketUser = Principal;
 
 // ── Init ────────────────────────────────────────────────────────────
 export async function initRealtime(httpServer: HttpServer): Promise<void> {

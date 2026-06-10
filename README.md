@@ -2,14 +2,17 @@
 
 Kullanıcı bazlı çalışan, gerçek zamanlı bir destek talep (helpdesk) uygulaması. Görevde istenen temel gereksinimleri (Vue 3 + TypeScript, Express + TypeScript, PostgreSQL, JWT, Docker Compose) karşılar; bunların üzerine rol/departman bazlı yetkilendirme, SLA takibi, otomatik atama, dosya ekleri, canlı bildirimler ve analiz paneli gibi özellikler ekler.
 
-Klonlayıp tek komutla ayağa kalkar (ortam değişkenleri için ek bir adım gerekmez; `.env` repoya dahildir):
+Klonlayıp kurulur (ortam değişkenleri `.env.example`'dan kopyalanır):
 
 ```bash
 git clone https://github.com/muzafferberkesavas/support-ticket-system
 cd support-ticket-system
+cp .env.example .env          # ortam değişkenleri (yerel için hazır varsayılanlar)
 docker compose up --build
 ```
 
+Ürün **https://support.local** üzerinden HTTPS ile yayınlanır (kurulum için aşağıdaki
+"HTTPS" bölümüne bakın). Yerel API/arayüz portları da açıktır:
 Frontend: http://localhost:5173 — Backend: http://localhost:3000
 
 > Kod yapısını ve mimariyi ayrıntılı anlatan teknik rehber: [docs/MIMARI.md](docs/MIMARI.md)
@@ -36,15 +39,15 @@ Kullanıcıların destek talebi oluşturup takip edebildiği, personelin bu tale
 
 ### Kullanılan Teknolojiler
 
-| Katman | Teknoloji |
-| --- | --- |
-| Frontend | Vue 3, TypeScript, Vite, Pinia, Vue Router, PrimeVue, vue-i18n, Chart.js, Socket.IO Client, Axios |
-| Backend | Node.js, Express, TypeScript, Prisma ORM, Zod, JWT (jsonwebtoken), bcrypt, Socket.IO, Multer, Nodemailer |
-| Worker | Node.js, **Bull** (Redis tabanlı iş kuyruğu), cron (tekrarlayan işler) |
-| Veritabanı | PostgreSQL 16 |
-| Diğer servisler | Redis 7 (Socket.IO adapter + Bull kuyruğu) |
-| E-posta | Nodemailer ile gerçek SMTP (örn. Gmail) |
-| Container | Docker, Docker Compose, nginx (frontend statik sunum) |
+| Katman          | Teknoloji                                                                                                |
+| --------------- | -------------------------------------------------------------------------------------------------------- |
+| Frontend        | Vue 3, TypeScript, Vite, Pinia, Vue Router, PrimeVue, vue-i18n, Chart.js, Socket.IO Client, Axios        |
+| Backend         | Node.js, Express, TypeScript, Prisma ORM, Zod, JWT (jsonwebtoken), bcrypt, Socket.IO, Multer, Nodemailer |
+| Worker          | Node.js, **Bull** (Redis tabanlı iş kuyruğu), cron (tekrarlayan işler)                                   |
+| Veritabanı      | PostgreSQL 16                                                                                            |
+| Diğer servisler | Redis 7 (Socket.IO adapter + Bull kuyruğu)                                                               |
+| E-posta         | Nodemailer ile gerçek SMTP (örn. Gmail)                                                                  |
+| Container       | Docker, Docker Compose, nginx (frontend statik sunum)                                                    |
 
 ### Yapı
 
@@ -81,36 +84,36 @@ Ek olarak geliştirilen özellikler:
 
 ```
 .
-├── docker-compose.yml          postgres, redis, backend, worker, frontend
-├── .env                        ortam değişkenleri (repoda, dev varsayılanları)
-├── README.md
+├── docker-compose.yml          postgres, redis, backend, worker, file-service, frontend, proxy
+├── .env.example                ortam değişkenleri şablonu (→ cp .env.example .env)
+├── README.md / CONTRIBUTING.md
+├── eslint.config.mjs / .prettierrc.json   kök lint & format
 │
-├── backend/                    Node.js + Express + TypeScript
-│   ├── Dockerfile
-│   ├── prisma/
-│   │   ├── schema.prisma        veri modeli
-│   │   └── migrations/          SQL migration'ları
+├── backend/                    Node.js + Express + TypeScript (API + worker)
+│   ├── README.md
+│   ├── prisma/                 schema.prisma + migrations
 │   └── src/
-│       ├── index.ts             HTTP + Socket.IO sunucusu
-│       ├── worker.ts            Bağımsız Bull worker (e-posta + günlük özet cron)
-│       ├── queue.ts             Bull kuyruğu (backend producer / worker consumer)
-│       ├── app.ts               Express app, route bağlama
-│       ├── env.ts               Zod ile env doğrulama
-│       ├── seed.ts              admin + departman + örnek veri
-│       ├── middleware/          auth (JWT), errorHandler
-│       ├── controllers/         auth, ticket, department, user, notification, analytics, canned, attachment, sla, dashboard, jobs
-│       ├── services/            access, sla, autoAssign, estimate, audit, notifications, scheduler, mailer, upload, textAnalysis
-│       ├── realtime/socket.ts   Socket.IO (oda, JWT handshake, presence/typing)
-│       └── routes/
+│       ├── index.ts            HTTP + Socket.IO sunucusu
+│       ├── worker.ts           Bağımsız Bull worker (e-posta, SLA cron, dışa aktarım)
+│       ├── queue.ts            Bull kuyruğu (backend producer / worker consumer)
+│       ├── app.ts / env.ts / seed.ts / schemas.ts
+│       ├── middleware/ controllers/ routes/
+│       ├── services/           access, sla, mailer, exportData, fileService (mikroservis istemcisi), ...
+│       └── realtime/socket.ts  Socket.IO (oda, JWT handshake, presence/typing)
 │
-└── frontend/                   Vue 3 + TypeScript + Vite
-    ├── Dockerfile, nginx.conf
-    └── src/
-        ├── router/ stores/ services/ composables/ i18n/
-        ├── components/          PriorityTag, SlaBadge, AttachmentList, CannedMenu, RealtimeBridge, ...
-        ├── layouts/AppLayout.vue
-        └── views/               Login, Register, ForgotPassword, ResetPassword, ChangePassword,
-                                  Tickets, TicketDetail, Departments, Users, Notifications, Analytics
+├── frontend/                   Vue 3 + TypeScript + Vite + PrimeVue
+│   ├── README.md, Dockerfile, nginx.conf
+│   └── src/                    views/ components/ layouts/ router/ stores/ services/ i18n/
+│
+├── file-service/               Dosya üretim mikroservisi (Excel/PDF) — DB bağlantısı YOK
+│   ├── README.md, Dockerfile
+│   └── src/                    index.ts, excel.ts, pdf.ts, schema.ts
+│
+├── proxy/                      HTTPS reverse proxy (nginx) — support.local
+│   ├── README.md, nginx.conf
+│
+├── scripts/gen-certs.sh        self-signed TLS sertifikası üretimi
+└── docs/MIMARI.md              teknik dokümantasyon ve mimari rehberi
 ```
 
 ## Kurulum ve Çalıştırma
@@ -119,7 +122,13 @@ Ek olarak geliştirilen özellikler:
 
 ### 1. Ortam değişkenleri
 
-Ortam değişkenleri `.env` dosyası ile yönetilir. Bu dosya, geliştirme için güvenli varsayılan değerlerle birlikte repoya dahildir; dolayısıyla klonladıktan sonra ayrı bir kopyalama adımına gerek yoktur. `JWT_SECRET` gibi değerleri gerçek bir ortamda değiştirin. Kişisel değişiklikleriniz için `.env.local` kullanabilirsiniz (git'e dahil edilmez).
+Ortam değişkenleri `.env` dosyası ile yönetilir. Gerçek `.env` repoya **konmaz**; şablon olarak `.env.example` izlenir. Kopyalayın:
+
+```bash
+cp .env.example .env
+```
+
+Şablondaki varsayılanlar yerel geliştirme için hazırdır. `JWT_SECRET`, `ADMIN_PASSWORD` gibi değerleri gerçek bir ortamda değiştirin. Gizli bilgileri (SMTP şifresi vb.) `.env.local` içine yazın (git'e dahil edilmez).
 
 ### 2. Docker Compose ile çalıştırma
 
@@ -127,7 +136,7 @@ Ortam değişkenleri `.env` dosyası ile yönetilir. Bu dosya, geliştirme için
 docker compose up --build
 ```
 
-Bu komut postgres, redis, backend, worker ve frontend servislerini ayağa kaldırır.
+Bu komut postgres, redis, backend, worker, file-service, frontend ve proxy servislerini ayağa kaldırır.
 
 ### 3. Veritabanı tabloları
 
@@ -146,15 +155,15 @@ docker compose down -v && docker compose up --build
 
 ### Servisler
 
-| Servis | URL | Not |
-| --- | --- | --- |
-| **Proxy (HTTPS)** | **https://support.local** | Ürünün asıl adresi — self-signed TLS reverse proxy |
-| Frontend | (proxy arkasında) | Vue arayüzü, proxy `/` ile sunar |
-| Backend | https://support.local/api · http://localhost:3000 | REST API + WebSocket |
-| **file-service** | (iç ağ, port 4000) | Excel/PDF üreten mikroservis — **DB bağlantısı YOK** |
-| Worker | http://localhost:3001/admin/queues | Bağımsız Bull worker + Bull Board kuyruk paneli |
-| PostgreSQL | localhost:5432 | postgres / postgres |
-| Redis | localhost:6379 | Socket.IO adapter + Bull kuyruğu |
+| Servis            | URL                                               | Not                                                  |
+| ----------------- | ------------------------------------------------- | ---------------------------------------------------- |
+| **Proxy (HTTPS)** | **https://support.local**                         | Ürünün asıl adresi — self-signed TLS reverse proxy   |
+| Frontend          | (proxy arkasında)                                 | Vue arayüzü, proxy `/` ile sunar                     |
+| Backend           | https://support.local/api · http://localhost:3000 | REST API + WebSocket                                 |
+| **file-service**  | (iç ağ, port 4000)                                | Excel/PDF üreten mikroservis — **DB bağlantısı YOK** |
+| Worker            | http://localhost:3001/admin/queues                | Bağımsız Bull worker + Bull Board kuyruk paneli      |
+| PostgreSQL        | localhost:5432                                    | postgres / postgres                                  |
+| Redis             | localhost:6379                                    | Socket.IO adapter + Bull kuyruğu                     |
 
 E-postalar gerçek bir SMTP sunucusu (örn. Gmail) ile gönderilir; kurulum için aşağıdaki
 "Gerçek SMTP" bölümüne bakın. SMTP yapılandırılmazsa uygulama çalışır, yalnızca e-posta
@@ -197,7 +206,7 @@ Mikroservisin kendi dokümantasyonu için `file-service/README.md` dosyasına ba
 
 ## Ortam Değişkenleri
 
-Tümü `.env` dosyasında açıklamalı olarak yer alır. Başlıcaları:
+Tümü `.env.example` şablonunda açıklamalı olarak yer alır (`cp .env.example .env` ile kopyalanır). Başlıcaları:
 
 ```env
 DATABASE_URL=postgresql://postgres:postgres@postgres:5432/support_db
@@ -253,46 +262,46 @@ env-file birlikte yüklenir.
 
 Şema Prisma ile yönetilir. Başlıca tablolar:
 
-| Tablo | Açıklama |
-| --- | --- |
-| `users` | Kullanıcı (email, parola hash, rol) |
-| `departments`, `department_members` | Departmanlar ve üyelikleri |
-| `tickets` | Talepler (subject, message, priority, status, createdAt, SLA alanları) |
-| `ticket_assignees` | Talep-temsilci atamaları |
-| `ticket_replies` | Yanıtlar ve dahili notlar |
-| `attachments` | Dosya ekleri (meta veri; dosyalar volume'da) |
-| `notifications` | Kalıcı bildirimler |
-| `canned_responses` | Hazır yanıt şablonları |
-| `audit_logs` | Aktivite kaydı |
-| `password_reset_tokens` | Şifre sıfırlama token'ları |
+| Tablo                               | Açıklama                                                               |
+| ----------------------------------- | ---------------------------------------------------------------------- |
+| `users`                             | Kullanıcı (email, parola hash, rol)                                    |
+| `departments`, `department_members` | Departmanlar ve üyelikleri                                             |
+| `tickets`                           | Talepler (subject, message, priority, status, createdAt, SLA alanları) |
+| `ticket_assignees`                  | Talep-temsilci atamaları                                               |
+| `ticket_replies`                    | Yanıtlar ve dahili notlar                                              |
+| `attachments`                       | Dosya ekleri (meta veri; dosyalar volume'da)                           |
+| `notifications`                     | Kalıcı bildirimler                                                     |
+| `canned_responses`                  | Hazır yanıt şablonları                                                 |
+| `audit_logs`                        | Aktivite kaydı                                                         |
+| `password_reset_tokens`             | Şifre sıfırlama token'ları                                             |
 
 Enum değerleri: `priority` = low/medium/high, `status` = open/in_progress/closed, `role` = user/agent/team_lead/admin.
 
 ## Demo Hesapları
 
-| Rol | E-posta | Şifre |
-| --- | --- | --- |
-| Yönetici (Admin) | admin@support.local | Admin123! |
-| Takım Lideri (Teknik) | tech.lead@support.local | Agent123! |
-| Temsilci (Teknik) | tech.agent@support.local | Agent123! |
-| Temsilci (Faturalama) | billing.agent@support.local | Agent123! |
-| Müşteri | musteri1@firma.com ... musteri10@firma.com | User123! |
+| Rol                   | E-posta                                    | Şifre     |
+| --------------------- | ------------------------------------------ | --------- |
+| Yönetici (Admin)      | admin@support.local                        | Admin123! |
+| Takım Lideri (Teknik) | tech.lead@support.local                    | Agent123! |
+| Temsilci (Teknik)     | tech.agent@support.local                   | Agent123! |
+| Temsilci (Faturalama) | billing.agent@support.local                | Agent123! |
+| Müşteri               | musteri1@firma.com ... musteri10@firma.com | User123!  |
 
 Kayıt ekranından yeni müşteri de oluşturulabilir. Admin'in oluşturduğu kullanıcıların geçici şifresi, SMTP yapılandırılmışsa e-posta ile gönderilir.
 
 ## Roller ve Yetkilendirme
 
-| Yetenek | Müşteri | Temsilci | Takım Lideri | Admin |
-| --- | :---: | :---: | :---: | :---: |
-| Talep oluşturma | Evet | Evet | Evet | Evet |
-| Talepleri görme | Kendi | Departmanı + atananları | Departmanı | Tümü |
-| Yanıt verme | Kendi talebinde | Evet | Evet | Evet |
-| Dahili not | - | Evet | Evet | Evet |
-| Atama / durum değiştirme | - | Evet | Evet | Evet |
-| Eskalasyon | - | Evet | Evet | Evet |
-| CSAT değerlendirme | Evet (kapanışta) | - | - | - |
-| Analiz paneli | - | - | Kendi departmanı | Tümü |
-| Departman / kullanıcı yönetimi | - | - | - | Evet |
+| Yetenek                        |     Müşteri      |        Temsilci         |   Takım Lideri   | Admin |
+| ------------------------------ | :--------------: | :---------------------: | :--------------: | :---: |
+| Talep oluşturma                |       Evet       |          Evet           |       Evet       | Evet  |
+| Talepleri görme                |      Kendi       | Departmanı + atananları |    Departmanı    | Tümü  |
+| Yanıt verme                    | Kendi talebinde  |          Evet           |       Evet       | Evet  |
+| Dahili not                     |        -         |          Evet           |       Evet       | Evet  |
+| Atama / durum değiştirme       |        -         |          Evet           |       Evet       | Evet  |
+| Eskalasyon                     |        -         |          Evet           |       Evet       | Evet  |
+| CSAT değerlendirme             | Evet (kapanışta) |            -            |        -         |   -   |
+| Analiz paneli                  |        -         |            -            | Kendi departmanı | Tümü  |
+| Departman / kullanıcı yönetimi |        -         |            -            |        -         | Evet  |
 
 ## API Dokümantasyonu
 
@@ -300,37 +309,37 @@ Base URL: `http://localhost:3000`. Kimlik gerektiren uçlarda header: `Authoriza
 
 ### Auth endpoint'leri
 
-| Method | Endpoint | Açıklama |
-| --- | --- | --- |
-| POST | /auth/register | Kullanıcı kaydı |
-| POST | /auth/login | Kullanıcı girişi |
-| GET | /auth/me | Mevcut kullanıcı |
-| POST | /auth/change-password | Şifre değiştirme (oturum gerektirir) |
-| POST | /auth/forgot-password | Sıfırlama bağlantısı gönderir |
-| POST | /auth/reset-password | Token ile yeni şifre |
+| Method | Endpoint              | Açıklama                             |
+| ------ | --------------------- | ------------------------------------ |
+| POST   | /auth/register        | Kullanıcı kaydı                      |
+| POST   | /auth/login           | Kullanıcı girişi                     |
+| GET    | /auth/me              | Mevcut kullanıcı                     |
+| POST   | /auth/change-password | Şifre değiştirme (oturum gerektirir) |
+| POST   | /auth/forgot-password | Sıfırlama bağlantısı gönderir        |
+| POST   | /auth/reset-password  | Token ile yeni şifre                 |
 
 ### Ticket endpoint'leri
 
-| Method | Endpoint | Açıklama |
-| --- | --- | --- |
-| GET | /tickets | Talepleri listeleme (filtreler: status, priority, departmentId, search) |
-| GET | /tickets/:id | Talep detayını görüntüleme |
-| POST | /tickets | Talep oluşturma |
-| PUT | /tickets/:id | Talep güncelleme |
-| DELETE | /tickets/:id | Talep silme |
-| PATCH | /tickets/:id/assign | Atama (personel) |
-| PATCH | /tickets/:id/escalate | Eskalasyon (personel) |
-| POST | /tickets/:id/replies | Yanıt veya dahili not |
-| POST | /tickets/:id/attachments | Dosya yükleme (multipart) |
-| POST | /tickets/:id/csat | Memnuniyet değerlendirmesi (müşteri) |
-| POST | /tickets/:id/reopen | Kapalı talebi yeniden açma |
-| GET | /tickets/:id/activity | Aktivite/audit geçmişi |
-| GET | /tickets/tags | Görünür etiketler (filtre için) |
-| POST | /tickets/bulk | Toplu işlem (personel) |
-| GET/PUT | /sla | SLA hedeflerini görüntüle/güncelle (yönetici/admin) |
-| GET | /dashboard | Personel özet paneli |
-| POST | /jobs/digest | Günlük özet işini kuyruğa al (admin → worker) |
-| GET | /healthz | Healthcheck |
+| Method  | Endpoint                 | Açıklama                                                                |
+| ------- | ------------------------ | ----------------------------------------------------------------------- |
+| GET     | /tickets                 | Talepleri listeleme (filtreler: status, priority, departmentId, search) |
+| GET     | /tickets/:id             | Talep detayını görüntüleme                                              |
+| POST    | /tickets                 | Talep oluşturma                                                         |
+| PUT     | /tickets/:id             | Talep güncelleme                                                        |
+| DELETE  | /tickets/:id             | Talep silme                                                             |
+| PATCH   | /tickets/:id/assign      | Atama (personel)                                                        |
+| PATCH   | /tickets/:id/escalate    | Eskalasyon (personel)                                                   |
+| POST    | /tickets/:id/replies     | Yanıt veya dahili not                                                   |
+| POST    | /tickets/:id/attachments | Dosya yükleme (multipart)                                               |
+| POST    | /tickets/:id/csat        | Memnuniyet değerlendirmesi (müşteri)                                    |
+| POST    | /tickets/:id/reopen      | Kapalı talebi yeniden açma                                              |
+| GET     | /tickets/:id/activity    | Aktivite/audit geçmişi                                                  |
+| GET     | /tickets/tags            | Görünür etiketler (filtre için)                                         |
+| POST    | /tickets/bulk            | Toplu işlem (personel)                                                  |
+| GET/PUT | /sla                     | SLA hedeflerini görüntüle/güncelle (yönetici/admin)                     |
+| GET     | /dashboard               | Personel özet paneli                                                    |
+| POST    | /jobs/digest             | Günlük özet işini kuyruğa al (admin → worker)                           |
+| GET     | /healthz                 | Healthcheck                                                             |
 
 Diğer: `/departments`, `/users`, `/notifications`, `/canned`, `/attachments/:id`, `/analytics`, `/auth/profile`.
 
@@ -409,7 +418,7 @@ Hata yanıtı formatı:
 Socket.IO, backend ile aynı HTTP sunucusu (port 3000) üzerinde çalışır. Kimlik doğrulama, WebSocket handshake'in `auth` payload'ı ile yapılır:
 
 ```js
-io('http://localhost:3000', { auth: { token } })
+io('http://localhost:3000', { auth: { token } });
 ```
 
 Odalar: `user:{id}`, `dept:{id}`, `ticket:{id}`, `ticket:{id}:staff` (dahili notlar). Başlıca olaylar: `ticket:created`, `ticket:updated`, `ticket:deleted`, `ticket:reply`, `notification`, `typing`, `presence`. Çok instance'lı ölçekleme Redis adapter ile sağlanır.
@@ -487,8 +496,8 @@ curl http://localhost:3000/tickets -H "Authorization: Bearer $TOKEN"
 
 Sık karşılaşılan durumlar:
 
-| Belirti | Çözüm |
-| --- | --- |
-| Port çakışması (3000/5173/5432) | Çakışan yerel servisi durdurun veya docker-compose.yml'de portu değiştirin |
-| Şemayı sıfırlamak | `docker compose down -v && docker compose up --build` |
-| E-posta gönderilmiyor | `.env.local`'de SMTP_USER/SMTP_PASS dolu mu; worker loglarına bakın (`docker compose logs worker`) |
+| Belirti                         | Çözüm                                                                                              |
+| ------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Port çakışması (3000/5173/5432) | Çakışan yerel servisi durdurun veya docker-compose.yml'de portu değiştirin                         |
+| Şemayı sıfırlamak               | `docker compose down -v && docker compose up --build`                                              |
+| E-posta gönderilmiyor           | `.env.local`'de SMTP_USER/SMTP_PASS dolu mu; worker loglarına bakın (`docker compose logs worker`) |

@@ -21,9 +21,27 @@ const loadError = ref('');
 const columns = computed<{ key: string; label: string; icon: string; color: string; tickets: Ticket[] }[]>(() =>
   data.value
     ? [
-        { key: 'slaRisk', label: t('dashboard.slaRisk'), icon: 'pi pi-exclamation-triangle', color: '#dc2626', tickets: data.value.slaRisk },
-        { key: 'myOpen', label: t('dashboard.myOpen'), icon: 'pi pi-user', color: '#6366f1', tickets: data.value.myOpen },
-        { key: 'unassigned', label: t('dashboard.unassigned'), icon: 'pi pi-inbox', color: '#d97706', tickets: data.value.unassigned },
+        {
+          key: 'slaRisk',
+          label: t('dashboard.slaRisk'),
+          icon: 'pi pi-exclamation-triangle',
+          color: '#dc2626',
+          tickets: data.value.slaRisk,
+        },
+        {
+          key: 'myOpen',
+          label: t('dashboard.myOpen'),
+          icon: 'pi pi-user',
+          color: '#6366f1',
+          tickets: data.value.myOpen,
+        },
+        {
+          key: 'unassigned',
+          label: t('dashboard.unassigned'),
+          icon: 'pi pi-inbox',
+          color: '#d97706',
+          tickets: data.value.unassigned,
+        },
       ]
     : [],
 );
@@ -61,26 +79,46 @@ onMounted(load);
     <div class="stat-grid">
       <div class="stat-card">
         <div class="stat-top">
-          <div><div class="stat-value">{{ data.counts.myOpen }}</div><div class="stat-label">{{ t('dashboard.myOpen') }}</div></div>
-          <div class="stat-icon" style="background: rgba(99,102,241,0.12); color:#6366f1"><i class="pi pi-user" /></div>
+          <div>
+            <div class="stat-value">{{ data.counts.myOpen }}</div>
+            <div class="stat-label">{{ t('dashboard.myOpen') }}</div>
+          </div>
+          <div class="stat-icon" style="background: rgba(99, 102, 241, 0.12); color: #6366f1">
+            <i class="pi pi-user" />
+          </div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-top">
-          <div><div class="stat-value" style="color:#dc2626">{{ data.counts.slaRisk }}</div><div class="stat-label">{{ t('dashboard.slaRisk') }}</div></div>
-          <div class="stat-icon" style="background: rgba(220,38,38,0.12); color:#dc2626"><i class="pi pi-exclamation-triangle" /></div>
+          <div>
+            <div class="stat-value" style="color: #dc2626">{{ data.counts.slaRisk }}</div>
+            <div class="stat-label">{{ t('dashboard.slaRisk') }}</div>
+          </div>
+          <div class="stat-icon" style="background: rgba(220, 38, 38, 0.12); color: #dc2626">
+            <i class="pi pi-exclamation-triangle" />
+          </div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-top">
-          <div><div class="stat-value" style="color:#d97706">{{ data.counts.unassigned }}</div><div class="stat-label">{{ t('dashboard.unassigned') }}</div></div>
-          <div class="stat-icon" style="background: rgba(217,119,6,0.12); color:#d97706"><i class="pi pi-inbox" /></div>
+          <div>
+            <div class="stat-value" style="color: #d97706">{{ data.counts.unassigned }}</div>
+            <div class="stat-label">{{ t('dashboard.unassigned') }}</div>
+          </div>
+          <div class="stat-icon" style="background: rgba(217, 119, 6, 0.12); color: #d97706">
+            <i class="pi pi-inbox" />
+          </div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-top">
-          <div><div class="stat-value" style="color:#16a34a">{{ data.counts.resolvedToday }}</div><div class="stat-label">{{ t('dashboard.resolvedToday') }}</div></div>
-          <div class="stat-icon" style="background: rgba(22,163,74,0.12); color:#16a34a"><i class="pi pi-check-circle" /></div>
+          <div>
+            <div class="stat-value" style="color: #16a34a">{{ data.counts.resolvedToday }}</div>
+            <div class="stat-label">{{ t('dashboard.resolvedToday') }}</div>
+          </div>
+          <div class="stat-icon" style="background: rgba(22, 163, 74, 0.12); color: #16a34a">
+            <i class="pi pi-check-circle" />
+          </div>
         </div>
       </div>
     </div>

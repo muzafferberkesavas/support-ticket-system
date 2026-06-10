@@ -79,9 +79,7 @@ async function load() {
     activity.value = await ticketService.activity(ticketId.value).catch(() => []);
     const tk = ticket.value;
     if (tk.userId === auth.user?.id && tk.status !== 'closed') {
-      estimate.value = await ticketService
-        .estimate(tk.priority, tk.departmentId ?? undefined)
-        .catch(() => null);
+      estimate.value = await ticketService.estimate(tk.priority, tk.departmentId ?? undefined).catch(() => null);
     } else {
       estimate.value = null;
     }
@@ -244,7 +242,12 @@ async function onDetailFiles(e: Event) {
     const created = await ticketService.uploadAttachments(ticket.value.id, picked);
     ticket.value.attachments = [...(ticket.value.attachments ?? []), ...created];
   } catch (err) {
-    toast.add({ severity: 'error', summary: t('tickets.detail.uploadFailed'), detail: extractErrorMessage(err), life: 4000 });
+    toast.add({
+      severity: 'error',
+      summary: t('tickets.detail.uploadFailed'),
+      detail: extractErrorMessage(err),
+      life: 4000,
+    });
   } finally {
     uploadingFiles.value = false;
   }
@@ -270,12 +273,8 @@ const activityLabel = (a: AuditEntry) => t(`activityActions.${a.action}`);
 const activityIcon = (a: AuditEntry) => ACTIVITY_ICON[a.action] ?? 'pi pi-circle';
 
 // ── Real-time ───────────────────────────────────────────────────────
-const typists = computed(() =>
-  realtime.typistsFor(ticketId.value).filter((u) => u.id !== auth.user?.id),
-);
-const viewers = computed(() =>
-  realtime.viewersFor(ticketId.value).filter((u) => u.id !== auth.user?.id),
-);
+const typists = computed(() => realtime.typistsFor(ticketId.value).filter((u) => u.id !== auth.user?.id));
+const viewers = computed(() => realtime.viewersFor(ticketId.value).filter((u) => u.id !== auth.user?.id));
 const typingText = computed(() => {
   const list = typists.value;
   if (!list.length) return '';
@@ -324,23 +323,34 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Button :label="t('tickets.backToList')" icon="pi pi-arrow-left" text severity="secondary" @click="router.push('/tickets')" style="margin-bottom: 1rem" />
+  <Button
+    :label="t('tickets.backToList')"
+    icon="pi pi-arrow-left"
+    text
+    severity="secondary"
+    @click="router.push('/tickets')"
+    style="margin-bottom: 1rem"
+  />
 
   <!-- Skeleton -->
   <div v-if="loading" class="detail-grid">
     <div>
-      <Card><template #content>
-        <Skeleton width="60%" height="1.6rem" style="margin-bottom: 1rem" />
-        <Skeleton width="100%" height="1rem" style="margin-bottom: 0.5rem" />
-        <Skeleton width="90%" height="1rem" style="margin-bottom: 0.5rem" />
-        <Skeleton width="70%" height="1rem" />
-      </template></Card>
+      <Card
+        ><template #content>
+          <Skeleton width="60%" height="1.6rem" style="margin-bottom: 1rem" />
+          <Skeleton width="100%" height="1rem" style="margin-bottom: 0.5rem" />
+          <Skeleton width="90%" height="1rem" style="margin-bottom: 0.5rem" />
+          <Skeleton width="70%" height="1rem" /> </template
+      ></Card>
     </div>
-    <div><Card><template #content>
-      <Skeleton width="100%" height="1rem" style="margin-bottom: 0.8rem" />
-      <Skeleton width="100%" height="1rem" style="margin-bottom: 0.8rem" />
-      <Skeleton width="80%" height="1rem" />
-    </template></Card></div>
+    <div>
+      <Card
+        ><template #content>
+          <Skeleton width="100%" height="1rem" style="margin-bottom: 0.8rem" />
+          <Skeleton width="100%" height="1rem" style="margin-bottom: 0.8rem" />
+          <Skeleton width="80%" height="1rem" /> </template
+      ></Card>
+    </div>
   </div>
 
   <Message v-else-if="loadError" severity="error" :closable="false">{{ loadError }}</Message>
@@ -355,7 +365,12 @@ onUnmounted(() => {
           <strong>{{ t('tickets.detail.estimate') }}</strong>
           <span>· {{ t('tickets.detail.estResponse') }}: ~{{ fmt(estimate.estFirstResponseMinutes) }}</span>
           <span>· {{ t('tickets.detail.estResolution') }}: ~{{ fmt(estimate.estResolutionMinutes) }}</span>
-          <span class="muted">({{ estimate.basedOnHistory ? t('tickets.detail.basedOnHistory') : t('tickets.detail.basedOnSla') }}<template v-if="estimate.queueAhead > 0">, {{ t('tickets.detail.queueAhead', { n: estimate.queueAhead }) }}</template>)</span>
+          <span class="muted"
+            >({{ estimate.basedOnHistory ? t('tickets.detail.basedOnHistory') : t('tickets.detail.basedOnSla')
+            }}<template v-if="estimate.queueAhead > 0"
+              >, {{ t('tickets.detail.queueAhead', { n: estimate.queueAhead }) }}</template
+            >)</span
+          >
         </div>
       </div>
 
@@ -388,9 +403,21 @@ onUnmounted(() => {
             <p class="muted" style="margin: 0.2rem 0 0.7rem; font-size: 0.86rem">{{ t('csat.subtitle') }}</p>
             <Rating v-model="csatRating" :stars="5" />
             <template v-if="csatRating">
-              <Textarea v-model="csatComment" rows="2" class="full-width" :placeholder="t('csat.comment')" style="margin-top: 0.7rem" />
+              <Textarea
+                v-model="csatComment"
+                rows="2"
+                class="full-width"
+                :placeholder="t('csat.comment')"
+                style="margin-top: 0.7rem"
+              />
               <div style="margin-top: 0.7rem">
-                <Button :label="t('csat.submit')" icon="pi pi-send" size="small" :loading="submittingCsat" @click="submitCsat" />
+                <Button
+                  :label="t('csat.submit')"
+                  icon="pi pi-send"
+                  size="small"
+                  :loading="submittingCsat"
+                  @click="submitCsat"
+                />
               </div>
             </template>
           </div>
@@ -434,7 +461,11 @@ onUnmounted(() => {
       <h3 class="section-title">
         <i class="pi pi-comments" /> {{ t('tickets.detail.conversation') }}
         <Tag :value="String(ticket.replies?.length ?? 0)" rounded severity="secondary" />
-        <span v-if="viewers.length" class="presence" v-tooltip.bottom="viewers.map(v => v.fullName || v.email).join(', ')">
+        <span
+          v-if="viewers.length"
+          class="presence"
+          v-tooltip.bottom="viewers.map((v) => v.fullName || v.email).join(', ')"
+        >
           <Avatar
             v-for="v in viewers.slice(0, 3)"
             :key="v.id"
@@ -458,10 +489,25 @@ onUnmounted(() => {
         >
           <div class="reply-head">
             <span class="reply-author">
-              <Avatar :label="initials(reply.author.fullName, reply.author.email)" shape="circle" class="avatar-brand" />
+              <Avatar
+                :label="initials(reply.author.fullName, reply.author.email)"
+                shape="circle"
+                class="avatar-brand"
+              />
               {{ reply.author.fullName || reply.author.email }}
-              <Tag v-if="reply.isInternal" :value="t('tickets.detail.internalBadge')" severity="warn" icon="pi pi-lock" rounded />
-              <Tag v-else-if="reply.author.role !== 'user'" :value="t('tickets.detail.supportTeam')" severity="info" rounded />
+              <Tag
+                v-if="reply.isInternal"
+                :value="t('tickets.detail.internalBadge')"
+                severity="warn"
+                icon="pi pi-lock"
+                rounded
+              />
+              <Tag
+                v-else-if="reply.author.role !== 'user'"
+                :value="t('tickets.detail.supportTeam')"
+                severity="info"
+                rounded
+              />
             </span>
             <span class="muted">{{ formatDateTime(reply.createdAt, ui.locale) }}</span>
           </div>
@@ -479,8 +525,19 @@ onUnmounted(() => {
 
       <Card class="reply-form-card">
         <template #content>
-          <label class="reply-label">{{ auth.isStaff ? t('tickets.detail.addReplyStaff') : t('tickets.detail.addReply') }}</label>
-          <Textarea v-model="replyText" rows="3" autoResize class="full-width" :placeholder="t('tickets.detail.replyPlaceholder')" maxlength="5000" @input="onReplyInput" @blur="stopTyping" />
+          <label class="reply-label">{{
+            auth.isStaff ? t('tickets.detail.addReplyStaff') : t('tickets.detail.addReply')
+          }}</label>
+          <Textarea
+            v-model="replyText"
+            rows="3"
+            autoResize
+            class="full-width"
+            :placeholder="t('tickets.detail.replyPlaceholder')"
+            maxlength="5000"
+            @input="onReplyInput"
+            @blur="stopTyping"
+          />
           <div class="reply-form-actions">
             <div class="reply-left">
               <CannedMenu v-if="auth.isStaff" @insert="insertCanned" />
@@ -489,7 +546,13 @@ onUnmounted(() => {
                 <span>{{ t('tickets.detail.internalNote') }}</span>
               </label>
             </div>
-            <Button :label="t('tickets.detail.sendReply')" icon="pi pi-send" :loading="sendingReply" :disabled="replyText.trim().length === 0" @click="sendReply" />
+            <Button
+              :label="t('tickets.detail.sendReply')"
+              icon="pi pi-send"
+              :loading="sendingReply"
+              :disabled="replyText.trim().length === 0"
+              @click="sendReply"
+            />
           </div>
         </template>
       </Card>
@@ -500,27 +563,54 @@ onUnmounted(() => {
       <Card>
         <template #title>{{ t('tickets.detail.information') }}</template>
         <template #content>
-          <div class="meta-row"><span class="meta-key">{{ t('tickets.fields.status') }}</span><StatusTag :status="ticket.status" /></div>
-          <div class="meta-row"><span class="meta-key">{{ t('tickets.fields.priority') }}</span><PriorityTag :priority="ticket.priority" /></div>
-          <div class="meta-row"><span class="meta-key">{{ t('tickets.fields.department') }}</span>
+          <div class="meta-row">
+            <span class="meta-key">{{ t('tickets.fields.status') }}</span
+            ><StatusTag :status="ticket.status" />
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">{{ t('tickets.fields.priority') }}</span
+            ><PriorityTag :priority="ticket.priority" />
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">{{ t('tickets.fields.department') }}</span>
             <Tag v-if="ticket.department" :value="ticket.department.name" severity="secondary" icon="pi pi-sitemap" />
             <span v-else class="muted">—</span>
           </div>
-          <div v-if="ticket.category" class="meta-row"><span class="meta-key">{{ t('tickets.fields.category') }}</span><span>{{ ticket.category }}</span></div>
+          <div v-if="ticket.category" class="meta-row">
+            <span class="meta-key">{{ t('tickets.fields.category') }}</span
+            ><span>{{ ticket.category }}</span>
+          </div>
           <div v-if="ticket.tags?.length" class="meta-row" style="align-items: flex-start">
             <span class="meta-key">{{ t('tickets.fields.tags') }}</span>
             <div style="display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: flex-end">
               <Tag v-for="tg in ticket.tags" :key="tg" :value="tg" severity="secondary" rounded />
             </div>
           </div>
-          <div class="meta-row"><span class="meta-key">{{ t('tickets.fields.requester') }}</span><span>{{ ticket.user?.fullName || ticket.user?.email || '—' }}</span></div>
-          <div class="meta-row"><span class="meta-key">{{ t('tickets.fields.createdAt') }}</span><span>{{ formatDateTime(ticket.createdAt, ui.locale) }}</span></div>
-          <div class="meta-row"><span class="meta-key">{{ t('tickets.fields.updatedAt') }}</span><span>{{ formatDateTime(ticket.updatedAt, ui.locale) }}</span></div>
+          <div class="meta-row">
+            <span class="meta-key">{{ t('tickets.fields.requester') }}</span
+            ><span>{{ ticket.user?.fullName || ticket.user?.email || '—' }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">{{ t('tickets.fields.createdAt') }}</span
+            ><span>{{ formatDateTime(ticket.createdAt, ui.locale) }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">{{ t('tickets.fields.updatedAt') }}</span
+            ><span>{{ formatDateTime(ticket.updatedAt, ui.locale) }}</span>
+          </div>
 
           <div class="meta-row" style="align-items: flex-start">
             <span class="meta-key">{{ t('tickets.fields.assignees') }}</span>
-            <div v-if="ticket.assignees?.length" style="display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: flex-end">
-              <Tag v-for="a in ticket.assignees" :key="a.id" :value="a.user.fullName || a.user.email" icon="pi pi-user" />
+            <div
+              v-if="ticket.assignees?.length"
+              style="display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: flex-end"
+            >
+              <Tag
+                v-for="a in ticket.assignees"
+                :key="a.id"
+                :value="a.user.fullName || a.user.email"
+                icon="pi pi-user"
+              />
             </div>
             <span v-else class="muted">{{ t('common.unassigned') }}</span>
           </div>
@@ -532,9 +622,11 @@ onUnmounted(() => {
           <div v-if="ticket.sla && ticket.status !== 'closed'" class="meta-row">
             <span class="meta-key">{{ t('sla.resolutionDue') }}</span>
             <span :class="{ 'sla-over': (ticket.sla.resolutionRemainingMinutes ?? 0) < 0 }">
-              {{ (ticket.sla.resolutionRemainingMinutes ?? 0) >= 0
-                ? t('sla.remaining', { n: fmt(ticket.sla.resolutionRemainingMinutes) })
-                : t('sla.overBy', { n: fmt(ticket.sla.resolutionRemainingMinutes) }) }}
+              {{
+                (ticket.sla.resolutionRemainingMinutes ?? 0) >= 0
+                  ? t('sla.remaining', { n: fmt(ticket.sla.resolutionRemainingMinutes) })
+                  : t('sla.overBy', { n: fmt(ticket.sla.resolutionRemainingMinutes) })
+              }}
             </span>
           </div>
 
@@ -576,12 +668,36 @@ onUnmounted(() => {
         <template #title>{{ t('tickets.detail.assignManage') }}</template>
         <template #content>
           <label class="reply-label">{{ t('tickets.detail.changeStatus') }}</label>
-          <Select :modelValue="ticket.status" :options="statusOptions" optionLabel="label" optionValue="value" class="full-width" :loading="statusUpdating" @update:modelValue="changeStatus" />
+          <Select
+            :modelValue="ticket.status"
+            :options="statusOptions"
+            optionLabel="label"
+            optionValue="value"
+            class="full-width"
+            :loading="statusUpdating"
+            @update:modelValue="changeStatus"
+          />
 
           <template v-if="ticket.departmentId">
             <label class="reply-label" style="margin-top: 1rem">{{ t('tickets.fields.assignees') }}</label>
-            <MultiSelect v-model="assigneeDraft" :options="assigneeOptions" optionLabel="label" optionValue="value" :placeholder="t('tickets.placeholders.assignees')" display="chip" class="full-width" :disabled="!assigneeOptions.length" />
-            <Button :label="t('common.save')" icon="pi pi-check" size="small" :loading="assigning" style="margin-top: 0.75rem" @click="saveAssignees" />
+            <MultiSelect
+              v-model="assigneeDraft"
+              :options="assigneeOptions"
+              optionLabel="label"
+              optionValue="value"
+              :placeholder="t('tickets.placeholders.assignees')"
+              display="chip"
+              class="full-width"
+              :disabled="!assigneeOptions.length"
+            />
+            <Button
+              :label="t('common.save')"
+              icon="pi pi-check"
+              size="small"
+              :loading="assigning"
+              style="margin-top: 0.75rem"
+              @click="saveAssignees"
+            />
           </template>
         </template>
       </Card>
@@ -599,12 +715,25 @@ onUnmounted(() => {
 
       <div class="detail-actions">
         <Button :label="t('common.edit')" icon="pi pi-pencil" outlined @click="dialogVisible = true" />
-        <Button v-if="canDelete" :label="t('common.delete')" icon="pi pi-trash" severity="danger" outlined @click="confirmDelete" />
+        <Button
+          v-if="canDelete"
+          :label="t('common.delete')"
+          icon="pi pi-trash"
+          severity="danger"
+          outlined
+          @click="confirmDelete"
+        />
       </div>
     </div>
   </div>
 
-  <TicketFormDialog v-if="ticket" v-model:visible="dialogVisible" :ticket="ticket" :canEditStatus="true" @saved="load" />
+  <TicketFormDialog
+    v-if="ticket"
+    v-model:visible="dialogVisible"
+    :ticket="ticket"
+    :canEditStatus="true"
+    @saved="load"
+  />
 </template>
 
 <style scoped>

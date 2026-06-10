@@ -72,7 +72,9 @@ async function submit() {
 
       <form @submit.prevent="submit">
         <div class="field">
-          <label for="fullName">{{ t('auth.fullName') }} <span class="muted">({{ t('common.optional') }})</span></label>
+          <label for="fullName"
+            >{{ t('auth.fullName') }} <span class="muted">({{ t('common.optional') }})</span></label
+          >
           <InputText id="fullName" v-model="form.fullName" class="full-width" placeholder="Mehmet Çelik" />
         </div>
 

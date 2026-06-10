@@ -49,7 +49,12 @@ async function savePassword() {
     toast.add({ severity: 'success', summary: t('auth.changeSuccess'), life: 3000 });
     pwd.current = pwd.next = pwd.confirm = '';
   } catch (err) {
-    toast.add({ severity: 'error', summary: t('auth.errors.changeFailed'), detail: extractErrorMessage(err), life: 4000 });
+    toast.add({
+      severity: 'error',
+      summary: t('auth.errors.changeFailed'),
+      detail: extractErrorMessage(err),
+      life: 4000,
+    });
   } finally {
     savingPwd.value = false;
   }
@@ -78,8 +83,14 @@ const langOptions = [
     <Card>
       <template #title>{{ t('profile.account') }}</template>
       <template #content>
-        <div class="meta-row"><span class="meta-key">{{ t('profile.email') }}</span><span>{{ auth.user?.email }}</span></div>
-        <div class="meta-row"><span class="meta-key">{{ t('profile.role') }}</span><RoleTag v-if="auth.user" :role="auth.user.role" /></div>
+        <div class="meta-row">
+          <span class="meta-key">{{ t('profile.email') }}</span
+          ><span>{{ auth.user?.email }}</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-key">{{ t('profile.role') }}</span
+          ><RoleTag v-if="auth.user" :role="auth.user.role" />
+        </div>
 
         <div class="field" style="margin-top: 1rem">
           <label>{{ t('profile.name') }}</label>
@@ -97,17 +108,37 @@ const langOptions = [
       <template #content>
         <div class="field">
           <label>{{ t('auth.currentPassword') }}</label>
-          <Password v-model="pwd.current" :feedback="false" toggleMask inputClass="full-width" class="full-width" :invalid="!!pwdErrors.current" />
+          <Password
+            v-model="pwd.current"
+            :feedback="false"
+            toggleMask
+            inputClass="full-width"
+            class="full-width"
+            :invalid="!!pwdErrors.current"
+          />
           <small v-if="pwdErrors.current" class="field-error">{{ pwdErrors.current }}</small>
         </div>
         <div class="field">
           <label>{{ t('auth.newPassword') }}</label>
-          <Password v-model="pwd.next" toggleMask inputClass="full-width" class="full-width" :invalid="!!pwdErrors.next" />
+          <Password
+            v-model="pwd.next"
+            toggleMask
+            inputClass="full-width"
+            class="full-width"
+            :invalid="!!pwdErrors.next"
+          />
           <small v-if="pwdErrors.next" class="field-error">{{ pwdErrors.next }}</small>
         </div>
         <div class="field">
           <label>{{ t('auth.passwordConfirm') }}</label>
-          <Password v-model="pwd.confirm" :feedback="false" toggleMask inputClass="full-width" class="full-width" :invalid="!!pwdErrors.confirm" />
+          <Password
+            v-model="pwd.confirm"
+            :feedback="false"
+            toggleMask
+            inputClass="full-width"
+            class="full-width"
+            :invalid="!!pwdErrors.confirm"
+          />
           <small v-if="pwdErrors.confirm" class="field-error">{{ pwdErrors.confirm }}</small>
         </div>
         <Button :label="t('auth.changeSubmit')" icon="pi pi-lock" :loading="savingPwd" @click="savePassword" />
@@ -120,11 +151,25 @@ const langOptions = [
       <template #content>
         <div class="field">
           <label>{{ t('profile.theme') }}</label>
-          <SelectButton :modelValue="ui.theme" :options="themeOptions" optionLabel="label" optionValue="value" :allowEmpty="false" @update:modelValue="ui.setTheme" />
+          <SelectButton
+            :modelValue="ui.theme"
+            :options="themeOptions"
+            optionLabel="label"
+            optionValue="value"
+            :allowEmpty="false"
+            @update:modelValue="ui.setTheme"
+          />
         </div>
         <div class="field">
           <label>{{ t('profile.language') }}</label>
-          <SelectButton :modelValue="ui.locale" :options="langOptions" optionLabel="label" optionValue="value" :allowEmpty="false" @update:modelValue="ui.setLocale" />
+          <SelectButton
+            :modelValue="ui.locale"
+            :options="langOptions"
+            optionLabel="label"
+            optionValue="value"
+            :allowEmpty="false"
+            @update:modelValue="ui.setLocale"
+          />
         </div>
       </template>
     </Card>

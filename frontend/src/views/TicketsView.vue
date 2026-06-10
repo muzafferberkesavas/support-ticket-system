@@ -338,26 +338,46 @@ onUnmounted(() => {
   <div class="stat-grid">
     <div class="stat-card">
       <div class="stat-top">
-        <div><div class="stat-value">{{ stats.total }}</div><div class="stat-label">{{ t('tickets.stats.total') }}</div></div>
-        <div class="stat-icon" style="background: rgba(99,102,241,0.12); color: #6366f1"><i class="pi pi-ticket" /></div>
+        <div>
+          <div class="stat-value">{{ stats.total }}</div>
+          <div class="stat-label">{{ t('tickets.stats.total') }}</div>
+        </div>
+        <div class="stat-icon" style="background: rgba(99, 102, 241, 0.12); color: #6366f1">
+          <i class="pi pi-ticket" />
+        </div>
       </div>
     </div>
     <div class="stat-card">
       <div class="stat-top">
-        <div><div class="stat-value" style="color:#d97706">{{ stats.open }}</div><div class="stat-label">{{ t('tickets.stats.open') }}</div></div>
-        <div class="stat-icon" style="background: rgba(217,119,6,0.12); color: #d97706"><i class="pi pi-inbox" /></div>
+        <div>
+          <div class="stat-value" style="color: #d97706">{{ stats.open }}</div>
+          <div class="stat-label">{{ t('tickets.stats.open') }}</div>
+        </div>
+        <div class="stat-icon" style="background: rgba(217, 119, 6, 0.12); color: #d97706">
+          <i class="pi pi-inbox" />
+        </div>
       </div>
     </div>
     <div class="stat-card">
       <div class="stat-top">
-        <div><div class="stat-value" style="color:#2563eb">{{ stats.inProgress }}</div><div class="stat-label">{{ t('tickets.stats.inProgress') }}</div></div>
-        <div class="stat-icon" style="background: rgba(37,99,235,0.12); color: #2563eb"><i class="pi pi-spinner" /></div>
+        <div>
+          <div class="stat-value" style="color: #2563eb">{{ stats.inProgress }}</div>
+          <div class="stat-label">{{ t('tickets.stats.inProgress') }}</div>
+        </div>
+        <div class="stat-icon" style="background: rgba(37, 99, 235, 0.12); color: #2563eb">
+          <i class="pi pi-spinner" />
+        </div>
       </div>
     </div>
     <div class="stat-card">
       <div class="stat-top">
-        <div><div class="stat-value" style="color:#dc2626">{{ stats.high }}</div><div class="stat-label">{{ t('tickets.stats.high') }}</div></div>
-        <div class="stat-icon" style="background: rgba(220,38,38,0.12); color: #dc2626"><i class="pi pi-exclamation-triangle" /></div>
+        <div>
+          <div class="stat-value" style="color: #dc2626">{{ stats.high }}</div>
+          <div class="stat-label">{{ t('tickets.stats.high') }}</div>
+        </div>
+        <div class="stat-icon" style="background: rgba(220, 38, 38, 0.12); color: #dc2626">
+          <i class="pi pi-exclamation-triangle" />
+        </div>
       </div>
     </div>
   </div>
@@ -368,12 +388,65 @@ onUnmounted(() => {
       <InputIcon class="pi pi-search" />
       <InputText v-model="searchText" :placeholder="t('common.search')" style="min-width: 220px" />
     </IconField>
-    <SelectButton v-if="auth.isStaff" v-model="scope" :options="scopeOptions" optionLabel="label" optionValue="value" :allowEmpty="false" @change="load" />
-    <Select v-model="filters.status" :options="statusOptions" optionLabel="label" optionValue="value" :placeholder="t('tickets.placeholders.filterStatus')" showClear style="min-width: 190px" @change="load" />
-    <Select v-model="filters.priority" :options="priorityOptions" optionLabel="label" optionValue="value" :placeholder="t('tickets.placeholders.filterPriority')" showClear style="min-width: 190px" @change="load" />
-    <Select v-if="auth.isStaff && departmentOptions.length" v-model="filters.departmentId" :options="departmentOptions" optionLabel="label" optionValue="value" :placeholder="t('tickets.placeholders.filterDepartment')" showClear style="min-width: 190px" @change="load" />
-    <Select v-if="availableTags.length" v-model="filters.tag" :options="tagOptions" optionLabel="label" optionValue="value" :placeholder="t('tickets.placeholders.filterTag')" showClear style="min-width: 170px" @change="load" />
-    <Button v-if="hasActiveFilters" :label="t('common.clear')" icon="pi pi-filter-slash" text severity="secondary" @click="clearFilters" />
+    <SelectButton
+      v-if="auth.isStaff"
+      v-model="scope"
+      :options="scopeOptions"
+      optionLabel="label"
+      optionValue="value"
+      :allowEmpty="false"
+      @change="load"
+    />
+    <Select
+      v-model="filters.status"
+      :options="statusOptions"
+      optionLabel="label"
+      optionValue="value"
+      :placeholder="t('tickets.placeholders.filterStatus')"
+      showClear
+      style="min-width: 190px"
+      @change="load"
+    />
+    <Select
+      v-model="filters.priority"
+      :options="priorityOptions"
+      optionLabel="label"
+      optionValue="value"
+      :placeholder="t('tickets.placeholders.filterPriority')"
+      showClear
+      style="min-width: 190px"
+      @change="load"
+    />
+    <Select
+      v-if="auth.isStaff && departmentOptions.length"
+      v-model="filters.departmentId"
+      :options="departmentOptions"
+      optionLabel="label"
+      optionValue="value"
+      :placeholder="t('tickets.placeholders.filterDepartment')"
+      showClear
+      style="min-width: 190px"
+      @change="load"
+    />
+    <Select
+      v-if="availableTags.length"
+      v-model="filters.tag"
+      :options="tagOptions"
+      optionLabel="label"
+      optionValue="value"
+      :placeholder="t('tickets.placeholders.filterTag')"
+      showClear
+      style="min-width: 170px"
+      @change="load"
+    />
+    <Button
+      v-if="hasActiveFilters"
+      :label="t('common.clear')"
+      icon="pi pi-filter-slash"
+      text
+      severity="secondary"
+      @click="clearFilters"
+    />
   </div>
 
   <Message v-if="loadError" severity="error" :closable="false" style="margin-bottom: 1rem">{{ loadError }}</Message>
@@ -389,9 +462,24 @@ onUnmounted(() => {
       :placeholder="t('bulk.changeStatus')"
       :disabled="bulkBusy"
       style="min-width: 170px"
-      @update:modelValue="(v) => { if (v) { bulkStatus(v); bulkStatusPick = null; } }"
+      @update:modelValue="
+        (v) => {
+          if (v) {
+            bulkStatus(v);
+            bulkStatusPick = null;
+          }
+        }
+      "
     />
-    <Button :label="t('bulk.delete')" icon="pi pi-trash" severity="danger" outlined size="small" :loading="bulkBusy" @click="bulkDelete" />
+    <Button
+      :label="t('bulk.delete')"
+      icon="pi pi-trash"
+      severity="danger"
+      outlined
+      size="small"
+      :loading="bulkBusy"
+      @click="bulkDelete"
+    />
     <Button :label="t('bulk.clear')" text size="small" severity="secondary" @click="selectedTickets = []" />
   </div>
 
@@ -435,8 +523,17 @@ onUnmounted(() => {
         <RouterLink :to="`/tickets/${data.id}`" class="subject-link">{{ data.subject }}</RouterLink>
         <div class="subject-sub">
           <span v-if="data.category" class="muted">{{ data.category }}</span>
-          <span v-if="data._count?.attachments" class="muted"><i class="pi pi-paperclip" /> {{ data._count.attachments }}</span>
-          <Tag v-for="tg in (data.tags || []).slice(0, 3)" :key="tg" :value="tg" severity="secondary" rounded class="list-tag" />
+          <span v-if="data._count?.attachments" class="muted"
+            ><i class="pi pi-paperclip" /> {{ data._count.attachments }}</span
+          >
+          <Tag
+            v-for="tg in (data.tags || []).slice(0, 3)"
+            :key="tg"
+            :value="tg"
+            severity="secondary"
+            rounded
+            class="list-tag"
+          />
           <SlaBadge :ticket="data" />
         </div>
       </template>
@@ -487,21 +584,49 @@ onUnmounted(() => {
     </Column>
 
     <Column field="createdAt" :header="t('tickets.fields.createdAt')" sortable style="min-width: 150px">
-      <template #body="{ data }"><span class="muted">{{ formatDateTime(data.createdAt, ui.locale) }}</span></template>
+      <template #body="{ data }"
+        ><span class="muted">{{ formatDateTime(data.createdAt, ui.locale) }}</span></template
+      >
     </Column>
 
     <Column :header="t('common.actions')" style="width: 140px">
       <template #body="{ data }">
         <div class="row-actions">
-          <Button icon="pi pi-eye" text rounded severity="secondary" v-tooltip.bottom="t('common.details')" @click="router.push(`/tickets/${data.id}`)" />
-          <Button icon="pi pi-pencil" text rounded severity="secondary" v-tooltip.bottom="t('common.edit')" @click="openEdit(data)" />
-          <Button icon="pi pi-trash" text rounded severity="danger" v-tooltip.bottom="t('common.delete')" @click="confirmDelete(data)" />
+          <Button
+            icon="pi pi-eye"
+            text
+            rounded
+            severity="secondary"
+            v-tooltip.bottom="t('common.details')"
+            @click="router.push(`/tickets/${data.id}`)"
+          />
+          <Button
+            icon="pi pi-pencil"
+            text
+            rounded
+            severity="secondary"
+            v-tooltip.bottom="t('common.edit')"
+            @click="openEdit(data)"
+          />
+          <Button
+            icon="pi pi-trash"
+            text
+            rounded
+            severity="danger"
+            v-tooltip.bottom="t('common.delete')"
+            @click="confirmDelete(data)"
+          />
         </div>
       </template>
     </Column>
   </DataTable>
 
-  <TicketFormDialog v-model:visible="dialogVisible" :ticket="editingTicket" :canEditStatus="auth.isStaff || !!editingTicket" @saved="load" />
+  <TicketFormDialog
+    v-model:visible="dialogVisible"
+    :ticket="editingTicket"
+    :canEditStatus="auth.isStaff || !!editingTicket"
+    @saved="load"
+  />
 </template>
 
 <style scoped>

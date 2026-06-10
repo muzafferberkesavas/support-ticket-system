@@ -121,7 +121,13 @@ function remove(r: CannedResponse) {
       </div>
     </Popover>
 
-    <Dialog v-model:visible="manageVisible" :header="t('tickets.detail.cannedManage')" modal :style="{ width: '560px' }" :draggable="false">
+    <Dialog
+      v-model:visible="manageVisible"
+      :header="t('tickets.detail.cannedManage')"
+      modal
+      :style="{ width: '560px' }"
+      :draggable="false"
+    >
       <div class="canned-form">
         <div class="field">
           <label>{{ t('tickets.detail.cannedTitle') }}</label>
@@ -138,7 +144,18 @@ function remove(r: CannedResponse) {
           :loading="saving"
           @click="save"
         />
-        <Button v-if="editing" :label="t('common.cancel')" text size="small" severity="secondary" @click="editing = null; form.title = ''; form.body = ''" />
+        <Button
+          v-if="editing"
+          :label="t('common.cancel')"
+          text
+          size="small"
+          severity="secondary"
+          @click="
+            editing = null;
+            form.title = '';
+            form.body = '';
+          "
+        />
       </div>
 
       <ul class="canned-list">

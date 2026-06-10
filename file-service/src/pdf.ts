@@ -28,7 +28,10 @@ export function buildPdf(payload: GeneratePayload): Promise<Buffer> {
       doc.fillColor('#111827').font('bold').fontSize(16).text(payload.title, left, doc.y);
       doc.moveDown(0.4);
     }
-    doc.fillColor('#6b7280').font('body').fontSize(8)
+    doc
+      .fillColor('#6b7280')
+      .font('body')
+      .fontSize(8)
       .text(`Oluşturulma: ${new Date().toISOString()} · ${payload.rows.length} kayıt`, { align: 'left' });
     doc.moveDown(0.5);
 
@@ -59,7 +62,9 @@ export function buildPdf(payload: GeneratePayload): Promise<Buffer> {
         doc.rect(left, y, contentWidth, h).fill('#f8fafc');
       }
       // Metin.
-      doc.font(opts.header ? 'bold' : 'body').fontSize(fontSize)
+      doc
+        .font(opts.header ? 'bold' : 'body')
+        .fontSize(fontSize)
         .fillColor(opts.header ? '#ffffff' : '#1f2937');
       let x = left;
       cells.forEach((cell, i) => {
@@ -67,8 +72,12 @@ export function buildPdf(payload: GeneratePayload): Promise<Buffer> {
         x += widths[i];
       });
       // Alt çizgi.
-      doc.strokeColor('#e5e7eb').lineWidth(0.5)
-        .moveTo(left, y + h).lineTo(right, y + h).stroke();
+      doc
+        .strokeColor('#e5e7eb')
+        .lineWidth(0.5)
+        .moveTo(left, y + h)
+        .lineTo(right, y + h)
+        .stroke();
       return h;
     }
 

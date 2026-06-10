@@ -36,7 +36,9 @@ function fmtDuration(min: number | null): string {
   if (m < 1440) {
     const h = Math.floor(m / 60);
     const rem = m % 60;
-    return rem ? `${t('analytics.hours', { n: h })} ${t('analytics.minutes', { n: rem })}` : t('analytics.hours', { n: h });
+    return rem
+      ? `${t('analytics.hours', { n: h })} ${t('analytics.minutes', { n: rem })}`
+      : t('analytics.hours', { n: h });
   }
   return t('analytics.days', { n: (m / 1440).toFixed(1) });
 }
@@ -170,18 +172,34 @@ function exportCsv() {
   rows.push([t('analytics.stats.escalated'), d.summary.escalated]);
   rows.push([t('analytics.stats.avgFirstResponse'), fmtDuration(d.summary.avgFirstResponseMinutes)]);
   rows.push([t('analytics.stats.avgResolution'), fmtDuration(d.summary.avgResolutionMinutes)]);
-  rows.push([t('analytics.stats.slaResponse'), d.summary.slaResponseCompliance != null ? `%${d.summary.slaResponseCompliance}` : '—']);
-  rows.push([t('analytics.stats.slaResolution'), d.summary.slaResolutionCompliance != null ? `%${d.summary.slaResolutionCompliance}` : '—']);
+  rows.push([
+    t('analytics.stats.slaResponse'),
+    d.summary.slaResponseCompliance != null ? `%${d.summary.slaResponseCompliance}` : '—',
+  ]);
+  rows.push([
+    t('analytics.stats.slaResolution'),
+    d.summary.slaResolutionCompliance != null ? `%${d.summary.slaResolutionCompliance}` : '—',
+  ]);
   rows.push([t('analytics.stats.csat'), d.summary.csatAverage != null ? d.summary.csatAverage.toFixed(2) : '—']);
   rows.push([]);
   rows.push([t('analytics.agents.title')]);
-  rows.push([t('analytics.agents.name'), t('analytics.agents.assigned'), t('analytics.agents.resolved'), t('analytics.agents.avgResponse')]);
+  rows.push([
+    t('analytics.agents.name'),
+    t('analytics.agents.assigned'),
+    t('analytics.agents.resolved'),
+    t('analytics.agents.avgResponse'),
+  ]);
   d.agentPerformance.forEach((a) =>
     rows.push([a.name, a.assigned, a.resolved, fmtDuration(a.avgFirstResponseMinutes)]),
   );
   rows.push([]);
   rows.push([t('analytics.recurring.title')]);
-  rows.push(['Term', t('analytics.recurring.occurrences', { count: '' }).replace('{count}', '').trim() || 'Count', 'Requesters', 'Kind']);
+  rows.push([
+    'Term',
+    t('analytics.recurring.occurrences', { count: '' }).replace('{count}', '').trim() || 'Count',
+    'Requesters',
+    'Kind',
+  ]);
   d.recurringProblems.forEach((th) => rows.push([th.term, th.count, th.distinctRequesters, th.kind]));
 
   downloadCsv(`analiz-raporu-${new Date().toISOString().slice(0, 10)}.csv`, rows);
@@ -227,26 +245,46 @@ onMounted(load);
     <div class="stat-grid">
       <div class="stat-card">
         <div class="stat-top">
-          <div><div class="stat-value">{{ data.summary.total }}</div><div class="stat-label">{{ t('analytics.stats.total') }}</div></div>
-          <div class="stat-icon" style="background: rgba(99,102,241,0.12); color:#6366f1"><i class="pi pi-ticket" /></div>
+          <div>
+            <div class="stat-value">{{ data.summary.total }}</div>
+            <div class="stat-label">{{ t('analytics.stats.total') }}</div>
+          </div>
+          <div class="stat-icon" style="background: rgba(99, 102, 241, 0.12); color: #6366f1">
+            <i class="pi pi-ticket" />
+          </div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-top">
-          <div><div class="stat-value">{{ fmtDuration(data.summary.avgFirstResponseMinutes) }}</div><div class="stat-label">{{ t('analytics.stats.avgFirstResponse') }}</div></div>
-          <div class="stat-icon" style="background: rgba(37,99,235,0.12); color:#2563eb"><i class="pi pi-bolt" /></div>
+          <div>
+            <div class="stat-value">{{ fmtDuration(data.summary.avgFirstResponseMinutes) }}</div>
+            <div class="stat-label">{{ t('analytics.stats.avgFirstResponse') }}</div>
+          </div>
+          <div class="stat-icon" style="background: rgba(37, 99, 235, 0.12); color: #2563eb">
+            <i class="pi pi-bolt" />
+          </div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-top">
-          <div><div class="stat-value">{{ fmtDuration(data.summary.avgResolutionMinutes) }}</div><div class="stat-label">{{ t('analytics.stats.avgResolution') }}</div></div>
-          <div class="stat-icon" style="background: rgba(34,197,94,0.12); color:#16a34a"><i class="pi pi-check-circle" /></div>
+          <div>
+            <div class="stat-value">{{ fmtDuration(data.summary.avgResolutionMinutes) }}</div>
+            <div class="stat-label">{{ t('analytics.stats.avgResolution') }}</div>
+          </div>
+          <div class="stat-icon" style="background: rgba(34, 197, 94, 0.12); color: #16a34a">
+            <i class="pi pi-check-circle" />
+          </div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-top">
-          <div><div class="stat-value" style="color:#dc2626">{{ data.summary.unassigned }}</div><div class="stat-label">{{ t('analytics.stats.unassigned') }}</div></div>
-          <div class="stat-icon" style="background: rgba(220,38,38,0.12); color:#dc2626"><i class="pi pi-user-minus" /></div>
+          <div>
+            <div class="stat-value" style="color: #dc2626">{{ data.summary.unassigned }}</div>
+            <div class="stat-label">{{ t('analytics.stats.unassigned') }}</div>
+          </div>
+          <div class="stat-icon" style="background: rgba(220, 38, 38, 0.12); color: #dc2626">
+            <i class="pi pi-user-minus" />
+          </div>
         </div>
       </div>
     </div>
@@ -255,14 +293,28 @@ onMounted(load);
     <div class="stat-grid">
       <div class="stat-card">
         <div class="stat-top">
-          <div><div class="stat-value">{{ data.summary.slaResponseCompliance != null ? '%' + data.summary.slaResponseCompliance : '—' }}</div><div class="stat-label">{{ t('analytics.stats.slaResponse') }}</div></div>
-          <div class="stat-icon" style="background: rgba(37,99,235,0.12); color:#2563eb"><i class="pi pi-bolt" /></div>
+          <div>
+            <div class="stat-value">
+              {{ data.summary.slaResponseCompliance != null ? '%' + data.summary.slaResponseCompliance : '—' }}
+            </div>
+            <div class="stat-label">{{ t('analytics.stats.slaResponse') }}</div>
+          </div>
+          <div class="stat-icon" style="background: rgba(37, 99, 235, 0.12); color: #2563eb">
+            <i class="pi pi-bolt" />
+          </div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-top">
-          <div><div class="stat-value">{{ data.summary.slaResolutionCompliance != null ? '%' + data.summary.slaResolutionCompliance : '—' }}</div><div class="stat-label">{{ t('analytics.stats.slaResolution') }}</div></div>
-          <div class="stat-icon" style="background: rgba(22,163,74,0.12); color:#16a34a"><i class="pi pi-verified" /></div>
+          <div>
+            <div class="stat-value">
+              {{ data.summary.slaResolutionCompliance != null ? '%' + data.summary.slaResolutionCompliance : '—' }}
+            </div>
+            <div class="stat-label">{{ t('analytics.stats.slaResolution') }}</div>
+          </div>
+          <div class="stat-icon" style="background: rgba(22, 163, 74, 0.12); color: #16a34a">
+            <i class="pi pi-verified" />
+          </div>
         </div>
       </div>
       <div class="stat-card">
@@ -270,17 +322,31 @@ onMounted(load);
           <div>
             <div class="stat-value csat-value">
               {{ data.summary.csatAverage != null ? data.summary.csatAverage.toFixed(1) : '—' }}
-              <Rating v-if="data.summary.csatAverage != null" :modelValue="Math.round(data.summary.csatAverage)" readonly :stars="5" />
+              <Rating
+                v-if="data.summary.csatAverage != null"
+                :modelValue="Math.round(data.summary.csatAverage)"
+                readonly
+                :stars="5"
+              />
             </div>
-            <div class="stat-label">{{ t('analytics.stats.csat') }} · {{ t('analytics.stats.csatCount', { n: data.summary.csatCount }) }}</div>
+            <div class="stat-label">
+              {{ t('analytics.stats.csat') }} · {{ t('analytics.stats.csatCount', { n: data.summary.csatCount }) }}
+            </div>
           </div>
-          <div class="stat-icon" style="background: rgba(245,158,11,0.12); color:#f59e0b"><i class="pi pi-star-fill" /></div>
+          <div class="stat-icon" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b">
+            <i class="pi pi-star-fill" />
+          </div>
         </div>
       </div>
       <div class="stat-card">
         <div class="stat-top">
-          <div><div class="stat-value" style="color:#dc2626">{{ data.summary.escalated }}</div><div class="stat-label">{{ t('analytics.stats.escalated') }}</div></div>
-          <div class="stat-icon" style="background: rgba(220,38,38,0.12); color:#dc2626"><i class="pi pi-arrow-up" /></div>
+          <div>
+            <div class="stat-value" style="color: #dc2626">{{ data.summary.escalated }}</div>
+            <div class="stat-label">{{ t('analytics.stats.escalated') }}</div>
+          </div>
+          <div class="stat-icon" style="background: rgba(220, 38, 38, 0.12); color: #dc2626">
+            <i class="pi pi-arrow-up" />
+          </div>
         </div>
       </div>
     </div>
@@ -309,16 +375,22 @@ onMounted(load);
     <div class="section-card">
       <h3 class="chart-title"><i class="pi pi-users" /> {{ t('analytics.agents.title') }}</h3>
       <DataTable :value="data.agentPerformance" dataKey="userId" stripedRows>
-        <template #empty><div class="empty-state" style="padding: 1.5rem"><p>{{ t('analytics.agents.empty') }}</p></div></template>
+        <template #empty
+          ><div class="empty-state" style="padding: 1.5rem">
+            <p>{{ t('analytics.agents.empty') }}</p>
+          </div></template
+        >
         <Column :header="t('analytics.agents.name')" style="min-width: 200px">
           <template #body="{ data: a }">
-            <div style="display:flex; align-items:center; gap:0.6rem">
+            <div style="display: flex; align-items: center; gap: 0.6rem">
               <Avatar :label="initials(a.name)" shape="circle" class="avatar-brand" />
-              <span style="font-weight:600">{{ a.name }}</span>
+              <span style="font-weight: 600">{{ a.name }}</span>
             </div>
           </template>
         </Column>
-        <Column :header="t('analytics.agents.role')"><template #body="{ data: a }"><RoleTag :role="a.role" /></template></Column>
+        <Column :header="t('analytics.agents.role')"
+          ><template #body="{ data: a }"><RoleTag :role="a.role" /></template
+        ></Column>
         <Column :header="t('analytics.agents.assigned')" sortable field="assigned">
           <template #body="{ data: a }"><Tag :value="String(a.assigned)" severity="secondary" rounded /></template>
         </Column>
@@ -326,7 +398,9 @@ onMounted(load);
           <template #body="{ data: a }"><Tag :value="String(a.resolved)" severity="success" rounded /></template>
         </Column>
         <Column :header="t('analytics.agents.avgResponse')">
-          <template #body="{ data: a }"><span class="muted">{{ fmtDuration(a.avgFirstResponseMinutes) }}</span></template>
+          <template #body="{ data: a }"
+            ><span class="muted">{{ fmtDuration(a.avgFirstResponseMinutes) }}</span></template
+          >
         </Column>
       </DataTable>
     </div>
@@ -334,9 +408,12 @@ onMounted(load);
     <!-- Recurring problems -->
     <div class="section-card">
       <h3 class="chart-title"><i class="pi pi-lightbulb" /> {{ t('analytics.recurring.title') }}</h3>
-      <p class="muted" style="margin-top:-0.4rem">{{ t('analytics.recurring.subtitle') }}</p>
+      <p class="muted" style="margin-top: -0.4rem">{{ t('analytics.recurring.subtitle') }}</p>
 
-      <div v-if="!data.recurringProblems.length" class="empty-state"><i class="pi pi-search" /><p>{{ t('analytics.recurring.empty') }}</p></div>
+      <div v-if="!data.recurringProblems.length" class="empty-state">
+        <i class="pi pi-search" />
+        <p>{{ t('analytics.recurring.empty') }}</p>
+      </div>
 
       <div v-else class="theme-grid">
         <div v-for="th in data.recurringProblems" :key="th.term" class="theme-card" :class="th.kind">
@@ -346,7 +423,10 @@ onMounted(load);
           </div>
           <div class="theme-meta">
             <span><i class="pi pi-ticket" /> {{ t('analytics.recurring.occurrences', { count: th.count }) }}</span>
-            <span><i class="pi pi-users" /> {{ t('analytics.recurring.requesters', { count: th.distinctRequesters }) }}</span>
+            <span
+              ><i class="pi pi-users" />
+              {{ t('analytics.recurring.requesters', { count: th.distinctRequesters }) }}</span
+            >
           </div>
           <p class="theme-rec">{{ recommendation(th) }}</p>
           <div class="theme-samples">

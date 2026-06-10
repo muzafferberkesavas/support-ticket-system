@@ -18,10 +18,22 @@ interface NotifInput {
 async function notifyAndPersist(userIds: string[], input: NotifInput): Promise<void> {
   for (const userId of [...new Set(userIds)].filter(Boolean)) {
     const n = await prisma.notification.create({
-      data: { userId, type: input.type, ticketId: input.ticketId, ticketSubject: input.ticketSubject, actor: input.actor },
+      data: {
+        userId,
+        type: input.type,
+        ticketId: input.ticketId,
+        ticketSubject: input.ticketSubject,
+        actor: input.actor,
+      },
     });
     emitToRoom(rooms.user(userId), 'notification', {
-      id: n.id, type: n.type, ticketId: n.ticketId, ticketSubject: n.ticketSubject, actor: n.actor, read: n.read, createdAt: n.createdAt,
+      id: n.id,
+      type: n.type,
+      ticketId: n.ticketId,
+      ticketSubject: n.ticketSubject,
+      actor: n.actor,
+      read: n.read,
+      createdAt: n.createdAt,
     });
   }
 }
@@ -65,7 +77,10 @@ export async function runSlaSweep(): Promise<{ escalated: number; reminded: numb
     audit('ticket.escalated', { ticketId: t.id, actorName: 'system', detail: { reason: 'sla_breach', via: 'worker' } });
     broadcastTicketUpdated(t);
     await notifyAndPersist(await recipientsFor(t.departmentId), {
-      type: 'status', ticketId: t.id, ticketSubject: t.subject, actor: 'Sistem (SLA)',
+      type: 'status',
+      ticketId: t.id,
+      ticketSubject: t.subject,
+      actor: 'Sistem (SLA)',
     });
     escalated += 1;
   }
@@ -85,7 +100,10 @@ export async function runSlaSweep(): Promise<{ escalated: number; reminded: numb
   for (const t of stale) {
     await prisma.ticket.update({ where: { id: t.id }, data: { reminderSentAt: new Date() } });
     await notifyAndPersist(await recipientsFor(t.departmentId), {
-      type: 'status', ticketId: t.id, ticketSubject: t.subject, actor: 'Sistem (hatırlatma)',
+      type: 'status',
+      ticketId: t.id,
+      ticketSubject: t.subject,
+      actor: 'Sistem (hatırlatma)',
     });
     reminded += 1;
   }

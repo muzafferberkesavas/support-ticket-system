@@ -143,12 +143,7 @@ async function logout() {
         <template v-if="showAdminSection">
           <div class="sidebar-section">{{ t('nav.management') }}</div>
           <template v-for="link in adminLinks" :key="link.key">
-            <div
-              v-if="link.show"
-              class="nav-item"
-              :class="{ active: isActive(link.to) }"
-              @click="go(link.to)"
-            >
+            <div v-if="link.show" class="nav-item" :class="{ active: isActive(link.to) }" @click="go(link.to)">
               <i :class="link.icon" />
               <span>{{ link.label }}</span>
             </div>
@@ -159,7 +154,9 @@ async function logout() {
       <div class="sidebar-footer">
         <Avatar :label="initials(auth.user?.fullName, auth.user?.email)" shape="circle" class="avatar-brand" />
         <div style="min-width: 0; flex: 1">
-          <div style="font-weight: 600; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">
+          <div
+            style="font-weight: 600; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap"
+          >
             {{ auth.displayName }}
           </div>
           <RoleTag v-if="auth.user" :role="auth.user.role" />
@@ -231,7 +228,15 @@ async function logout() {
                 </div>
               </button>
               <div class="notif-pop-foot">
-                <Button :label="t('notifications.viewAll')" text size="small" @click="notifPanel.hide(); go('/notifications')" />
+                <Button
+                  :label="t('notifications.viewAll')"
+                  text
+                  size="small"
+                  @click="
+                    notifPanel.hide();
+                    go('/notifications');
+                  "
+                />
               </div>
             </div>
           </Popover>
@@ -254,13 +259,7 @@ async function logout() {
           >
             <span class="lang-label">{{ ui.locale === 'tr' ? 'TR' : 'EN' }}</span>
           </Button>
-          <Button
-            text
-            rounded
-            severity="secondary"
-            aria-haspopup="true"
-            @click="userMenu.toggle($event)"
-          >
+          <Button text rounded severity="secondary" aria-haspopup="true" @click="userMenu.toggle($event)">
             <Avatar
               :label="initials(auth.user?.fullName, auth.user?.email)"
               shape="circle"
@@ -295,7 +294,9 @@ async function logout() {
   border-radius: 50%;
   background: #9ca3af;
   box-shadow: 0 0 0 3px color-mix(in srgb, #9ca3af 25%, transparent);
-  transition: background 0.3s ease, box-shadow 0.3s ease;
+  transition:
+    background 0.3s ease,
+    box-shadow 0.3s ease;
 }
 .conn-dot.online {
   background: #22c55e;
@@ -313,7 +314,9 @@ async function logout() {
   color: var(--text-muted);
   display: grid;
   place-items: center;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 .bell-btn:hover {
   background: var(--surface-hover);

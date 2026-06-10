@@ -43,8 +43,14 @@ async function computeDigests(): Promise<Digest[]> {
   const openTickets = await prisma.ticket.findMany({
     where: { status: { in: ['open', 'in_progress'] } },
     select: {
-      id: true, priority: true, status: true, createdAt: true, firstResponseAt: true,
-      resolvedAt: true, departmentId: true, assignees: { select: { userId: true } },
+      id: true,
+      priority: true,
+      status: true,
+      createdAt: true,
+      firstResponseAt: true,
+      resolvedAt: true,
+      departmentId: true,
+      assignees: { select: { userId: true } },
     },
   });
 

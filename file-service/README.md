@@ -19,7 +19,7 @@ Docker Compose içinde `file-service` servisi olarak ayağa kalkar (port 4000).
 
 ## Ortam değişkenleri
 
-| Değişken             | Varsayılan | Açıklama                                             |
+| Değişken             | Varsayılan | Açıklama                                            |
 | -------------------- | ---------- | --------------------------------------------------- |
 | `PORT`               | `4000`     | Dinlenen port                                       |
 | `FILE_SERVICE_TOKEN` | _(boş)_    | Ayarlanırsa `Authorization: Bearer <token>` zorunlu |
@@ -28,27 +28,27 @@ Docker Compose içinde `file-service` servisi olarak ayağa kalkar (port 4000).
 ## API
 
 ### `GET /healthz`
+
 ```json
 { "status": "ok", "service": "file-service", "db": false }
 ```
 
 ### `POST /generate/excel` → `.xlsx`
+
 ### `POST /generate/pdf` → `.pdf`
 
 Ortak istek gövdesi (contract):
 
 ```jsonc
 {
-  "title": "Talepler",              // (opsiyonel) PDF başlığı
-  "filename": "talepler.xlsx",      // (opsiyonel) indirilen dosya adı
-  "sheetName": "Talepler",          // (opsiyonel) Excel sayfa adı
+  "title": "Talepler", // (opsiyonel) PDF başlığı
+  "filename": "talepler.xlsx", // (opsiyonel) indirilen dosya adı
+  "sheetName": "Talepler", // (opsiyonel) Excel sayfa adı
   "columns": [
     { "header": "Konu", "key": "subject", "width": 30 },
-    { "header": "Durum", "key": "status", "width": 12 }
+    { "header": "Durum", "key": "status", "width": 12 },
   ],
-  "rows": [
-    { "subject": "Yazıcı çalışmıyor", "status": "open" }
-  ]
+  "rows": [{ "subject": "Yazıcı çalışmıyor", "status": "open" }],
 }
 ```
 

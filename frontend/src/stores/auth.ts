@@ -19,12 +19,9 @@ export const useAuthStore = defineStore('auth', {
     isAuthenticated: (state): boolean => !!state.token,
     mustChangePassword: (state): boolean => state.user?.mustChangePassword === true,
     isAdmin: (state): boolean => state.user?.role === 'admin',
-    isManager: (state): boolean =>
-      state.user?.role === 'admin' || state.user?.role === 'team_lead',
+    isManager: (state): boolean => state.user?.role === 'admin' || state.user?.role === 'team_lead',
     isStaff: (state): boolean =>
-      state.user?.role === 'admin' ||
-      state.user?.role === 'team_lead' ||
-      state.user?.role === 'agent',
+      state.user?.role === 'admin' || state.user?.role === 'team_lead' || state.user?.role === 'agent',
     displayName: (state): string => state.user?.fullName || state.user?.email || '',
   },
 

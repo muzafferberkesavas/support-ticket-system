@@ -86,8 +86,10 @@ export default {
         general: 'Genel',
       },
       rec: {
-        hardware: '"{term}" {count} talepte, {requesters} farklı kişiden geldi — toplu temin / stok bulundurmayı değerlendirin.',
-        recurring: '"{term}" {requesters} farklı kişiden {count} talepte tekrar ediyor — kalıcı / kök-neden çözüm üretin.',
+        hardware:
+          '"{term}" {count} talepte, {requesters} farklı kişiden geldi — toplu temin / stok bulundurmayı değerlendirin.',
+        recurring:
+          '"{term}" {requesters} farklı kişiden {count} talepte tekrar ediyor — kalıcı / kök-neden çözüm üretin.',
         failure: '"{term}" {count} talepte arıza olarak geçiyor — kök-neden analizi yapın.',
         general: '"{term}" {count} talepte geçiyor.',
       },
@@ -215,7 +217,8 @@ export default {
       assignUpdated: 'Atamalar güncellendi.',
       statusUpdated: 'Durum güncellendi.',
       escalate: 'Eskale Et',
-      escalateConfirm: 'Bu talebi eskale etmek istediğinize emin misiniz? Öncelik yükseltilecek ve yöneticiler bilgilendirilecek.',
+      escalateConfirm:
+        'Bu talebi eskale etmek istediğinize emin misiniz? Öncelik yükseltilecek ve yöneticiler bilgilendirilecek.',
       escalated: 'Eskale edildi',
       escalateDone: 'Talep eskale edildi.',
       reopen: 'Yeniden Aç',
@@ -381,11 +384,13 @@ export default {
     save: 'Kaydet',
     saved: 'SLA hedefleri güncellendi.',
     jobsTitle: 'Arka Plan İşleri (Worker)',
-    jobsSubtitle: 'Bull + Redis ile çalışan worker servisi. Günlük özet maili her gün otomatik gönderilir; aşağıdan hemen tetikleyebilirsiniz.',
+    jobsSubtitle:
+      'Bull + Redis ile çalışan worker servisi. Günlük özet maili her gün otomatik gönderilir; aşağıdan hemen tetikleyebilirsiniz.',
     runDigest: 'Günlük özeti şimdi gönder',
     digestQueued: 'Günlük özet işi kuyruğa alındı; worker gönderiyor (Mailpit).',
     exportTitle: 'Talep Dışa Aktarımı (Dosya Mikroservisi)',
-    exportSubtitle: 'Talepler, veritabanı bağlantısı olmayan ayrı bir dosya mikroservisinde Excel/PDF olarak üretilir. Backend bu servise istek atıp dosyayı döndürür.',
+    exportSubtitle:
+      'Talepler, veritabanı bağlantısı olmayan ayrı bir dosya mikroservisinde Excel/PDF olarak üretilir. Backend bu servise istek atıp dosyayı döndürür.',
     downloadExcel: 'Excel indir',
     downloadPdf: 'PDF indir',
     exportError: 'Dosya üretilemedi',
@@ -442,4 +447,4 @@ export default {
     unread: 'okunmamış',
     justNow: 'az önce',
   },
-}
+};

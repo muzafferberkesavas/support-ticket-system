@@ -82,13 +82,7 @@ function view(data: { ticketId?: string } | undefined) {
         <div class="rt-content">
           <div class="rt-title">{{ message.summary }}</div>
           <div class="rt-detail">{{ message.detail }}</div>
-          <Button
-            :label="t('common.details')"
-            icon="pi pi-arrow-right"
-            size="small"
-            text
-            @click="view(message.data)"
-          />
+          <Button :label="t('common.details')" icon="pi pi-arrow-right" size="small" text @click="view(message.data)" />
         </div>
       </div>
     </template>

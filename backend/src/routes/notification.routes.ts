@@ -1,12 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
-import {
-  listNotifications,
-  markAllRead,
-  markRead,
-  unreadCount,
-} from '../controllers/notification.controller';
+import { listNotifications, markAllRead, markRead, unreadCount } from '../controllers/notification.controller';
 
 const router = Router();
 router.use(authenticate);

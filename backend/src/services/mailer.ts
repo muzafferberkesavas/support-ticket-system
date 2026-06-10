@@ -37,12 +37,7 @@ interface MailAttachment {
   contentType?: string;
 }
 
-async function send(
-  to: string,
-  subject: string,
-  html: string,
-  attachments?: MailAttachment[],
-): Promise<void> {
+async function send(to: string, subject: string, html: string, attachments?: MailAttachment[]): Promise<void> {
   if (!isMailConfigured) {
     console.log(`✉️  SMTP not configured — skipping email to ${to}`);
     return;
@@ -79,11 +74,7 @@ function layout(title: string, body: string): string {
 const btn = (href: string, label: string) =>
   `<a href="${href}" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:12px 22px;border-radius:10px;font-weight:600">${label}</a>`;
 
-export async function sendWelcomeEmail(
-  to: string,
-  fullName: string | null,
-  tempPassword: string,
-): Promise<void> {
+export async function sendWelcomeEmail(to: string, fullName: string | null, tempPassword: string): Promise<void> {
   const html = layout(
     `Hoş geldiniz${fullName ? ', ' + fullName : ''}!`,
     `<p style="color:#374151;line-height:1.6">Destek Merkezi hesabınız oluşturuldu. Aşağıdaki geçici şifre ile giriş yapın; ilk girişte sizden yeni bir şifre belirlemeniz istenecek.</p>
@@ -117,11 +108,7 @@ export interface DigestStats {
   unassigned: number;
 }
 
-export async function sendDigestEmail(
-  to: string,
-  name: string | null,
-  stats: DigestStats,
-): Promise<void> {
+export async function sendDigestEmail(to: string, name: string | null, stats: DigestStats): Promise<void> {
   const row = (label: string, value: number, color = '#1f2433') =>
     `<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;color:#374151">${label}</td>
      <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:700;color:${color}">${value}</td></tr>`;
@@ -166,9 +153,7 @@ export async function sendExportEmail(
   // CSV ise Excel'in UTF-8 okuyabilmesi için BOM ekle; binary (Buffer) olduğu
   // gibi gönderilir.
   const attachmentContent = typeof content === 'string' ? '﻿' + content : content;
-  await send(to, 'Destek Merkezi — Talep dışa aktarımı', html, [
-    { filename, content: attachmentContent, contentType },
-  ]);
+  await send(to, 'Destek Merkezi — Talep dışa aktarımı', html, [{ filename, content: attachmentContent, contentType }]);
 }
 
 export async function sendResetEmail(to: string, resetLink: string): Promise<void> {

@@ -100,11 +100,31 @@ onMounted(load);
       </div>
       <div v-for="p in priorities" :key="p" class="sla-grid">
         <PriorityTag :priority="p" />
-        <InputNumber v-model="targets[p].response" :min="1" :max="100000" :useGrouping="false" showButtons class="full-width" />
-        <InputNumber v-model="targets[p].resolution" :min="1" :max="1000000" :useGrouping="false" showButtons class="full-width" />
+        <InputNumber
+          v-model="targets[p].response"
+          :min="1"
+          :max="100000"
+          :useGrouping="false"
+          showButtons
+          class="full-width"
+        />
+        <InputNumber
+          v-model="targets[p].resolution"
+          :min="1"
+          :max="1000000"
+          :useGrouping="false"
+          showButtons
+          class="full-width"
+        />
       </div>
 
-      <Button :label="t('settings.save')" icon="pi pi-check" :loading="saving" style="margin-top: 1.25rem" @click="save" />
+      <Button
+        :label="t('settings.save')"
+        icon="pi pi-check"
+        :loading="saving"
+        style="margin-top: 1.25rem"
+        @click="save"
+      />
     </template>
   </Card>
 

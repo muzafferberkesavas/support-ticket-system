@@ -5,8 +5,10 @@ node_modules/
 dist/
 build/
 
-# Env — the committed .env holds safe development defaults so the project
-# runs straight after cloning. Keep personal overrides out of git:
+# Ortam değişkenleri — gerçek .env repoya KOYULMAZ. Şablon olarak .env.example
+# izlenir; kurulumda `cp .env.example .env` ile kopyalanır. Kişisel/gizli
+# override'lar .env.local içine yazılır (o da git'e dahil değildir).
+.env
 .env.local
 *.local
 

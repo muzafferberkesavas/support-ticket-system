@@ -58,7 +58,12 @@ export async function uploadAttachments(req: Request, res: Response): Promise<vo
     created.push(publicAttachment(a));
   }
 
-  audit('ticket.attachment', { ticketId: ticket.id, actorId: user.id, actorName: user.email, detail: { count: created.length } });
+  audit('ticket.attachment', {
+    ticketId: ticket.id,
+    actorId: user.id,
+    actorName: user.email,
+    detail: { count: created.length },
+  });
   emitTicketUpdated(ticket, []);
   res.status(201).json({ attachments: created });
 }

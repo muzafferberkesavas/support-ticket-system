@@ -175,7 +175,12 @@ export async function createTicket(req: Request, res: Response): Promise<void> {
     },
     include: ticketInclude,
   });
-  audit('ticket.created', { ticketId: ticket.id, actorId: user.id, actorName: user.email, detail: { subject: ticket.subject, priority: ticket.priority } });
+  audit('ticket.created', {
+    ticketId: ticket.id,
+    actorId: user.id,
+    actorName: user.email,
+    detail: { subject: ticket.subject, priority: ticket.priority },
+  });
 
   // Auto-assign to the least-loaded agent when no one was chosen manually.
   let autoAssignedId: string | null = null;
@@ -184,7 +189,11 @@ export async function createTicket(req: Request, res: Response): Promise<void> {
     if (autoAssignedId) {
       await prisma.ticketAssignee.create({ data: { ticketId: ticket.id, userId: autoAssignedId } });
       ticket = (await prisma.ticket.findUnique({ where: { id: ticket.id }, include: ticketInclude }))!;
-      audit('ticket.assigned', { ticketId: ticket.id, actorName: 'system', detail: { auto: true, assignee: autoAssignedId } });
+      audit('ticket.assigned', {
+        ticketId: ticket.id,
+        actorName: 'system',
+        detail: { auto: true, assignee: autoAssignedId },
+      });
     }
   }
 
@@ -234,9 +243,7 @@ export async function updateTicket(req: Request, res: Response): Promise<void> {
       update.resolvedAt = data.status === 'closed' ? new Date() : null;
     }
     if (data.departmentId !== undefined) {
-      update.department = data.departmentId
-        ? { connect: { id: data.departmentId } }
-        : { disconnect: true };
+      update.department = data.departmentId ? { connect: { id: data.departmentId } } : { disconnect: true };
     }
   } else if (data.status !== undefined || data.departmentId !== undefined) {
     throw new AppError(403, 'Only staff can change status or department');
@@ -304,7 +311,12 @@ export async function assignTicket(req: Request, res: Response): Promise<void> {
     include: ticketDetailInclude,
   });
 
-  audit('ticket.assigned', { ticketId: existing.id, actorId: user.id, actorName: user.email, detail: { assignees: assigneeIds } });
+  audit('ticket.assigned', {
+    ticketId: existing.id,
+    actorId: user.id,
+    actorName: user.email,
+    detail: { assignees: assigneeIds },
+  });
 
   // Real-time: broadcast update + notify newly assigned agents.
   emitTicketUpdated(ticket!, assigneeIds);
@@ -332,7 +344,12 @@ export async function deleteTicket(req: Request, res: Response): Promise<void> {
   }
 
   await prisma.ticket.delete({ where: { id: existing.id } });
-  audit('ticket.deleted', { ticketId: existing.id, actorId: user.id, actorName: user.email, detail: { subject: existing.subject } });
+  audit('ticket.deleted', {
+    ticketId: existing.id,
+    actorId: user.id,
+    actorName: user.email,
+    detail: { subject: existing.subject },
+  });
   emitTicketDeleted(existing);
   res.status(204).send();
 }
@@ -430,7 +447,10 @@ export async function escalateTicket(req: Request, res: Response): Promise<void>
   audit('ticket.escalated', { ticketId: existing.id, actorId: user.id, actorName: user.email, detail: { reason } });
 
   const ticket = await prisma.ticket.findUnique({ where: { id: existing.id }, include: ticketDetailInclude });
-  emitTicketUpdated(ticket!, ticket!.assignees.map((a) => a.userId));
+  emitTicketUpdated(
+    ticket!,
+    ticket!.assignees.map((a) => a.userId),
+  );
   const notif = { type: 'status' as const, ticketId: existing.id, ticketSubject: existing.subject, actor: user.email };
   if (existing.departmentId) notifyDepartment(existing.departmentId, notif, user.id);
   notifyAdmins(notif, user.id);
@@ -454,7 +474,10 @@ export async function reopenTicket(req: Request, res: Response): Promise<void> {
   audit('ticket.reopened', { ticketId: existing.id, actorId: user.id, actorName: user.email });
 
   const ticket = await prisma.ticket.findUnique({ where: { id: existing.id }, include: ticketDetailInclude });
-  emitTicketUpdated(ticket!, ticket!.assignees.map((a) => a.userId));
+  emitTicketUpdated(
+    ticket!,
+    ticket!.assignees.map((a) => a.userId),
+  );
   const notif = { type: 'status' as const, ticketId: existing.id, ticketSubject: existing.subject, actor: user.email };
   if (existing.departmentId) notifyDepartment(existing.departmentId, notif, user.id);
   notifyAdmins(notif, user.id);
@@ -535,7 +558,12 @@ export async function bulkUpdate(req: Request, res: Response): Promise<void> {
         where: { id },
         data: { status, resolvedAt: status === 'closed' ? new Date() : null },
       });
-      audit('ticket.status', { ticketId: id, actorId: user.id, actorName: user.email, detail: { to: status, bulk: true } });
+      audit('ticket.status', {
+        ticketId: id,
+        actorId: user.id,
+        actorName: user.email,
+        detail: { to: status, bulk: true },
+      });
       if (status === 'closed' && t.status !== 'closed') void enqueueCsatRequest(id);
       emitTicketUpdated(t, []);
       updated += 1;
@@ -551,7 +579,12 @@ export async function bulkUpdate(req: Request, res: Response): Promise<void> {
         continue;
       }
       await setAssignees(id, assigneeIds);
-      audit('ticket.assigned', { ticketId: id, actorId: user.id, actorName: user.email, detail: { assignees: assigneeIds, bulk: true } });
+      audit('ticket.assigned', {
+        ticketId: id,
+        actorId: user.id,
+        actorName: user.email,
+        detail: { assignees: assigneeIds, bulk: true },
+      });
       emitTicketUpdated(t, assigneeIds);
       updated += 1;
     } else if (action === 'delete') {

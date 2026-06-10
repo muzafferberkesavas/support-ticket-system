@@ -16,10 +16,7 @@ export interface Estimate {
 
 // Estimates response/resolution time for a new ticket from historical averages
 // (same priority, optionally same department), falling back to SLA targets.
-export async function estimateForTicket(
-  priority: string,
-  departmentId?: string | null,
-): Promise<Estimate> {
+export async function estimateForTicket(priority: string, departmentId?: string | null): Promise<Estimate> {
   const slaTargets = getSlaTargets();
   const sla = slaTargets[priority] ?? slaTargets.medium;
   const base: Prisma.TicketWhereInput = {

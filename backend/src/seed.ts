@@ -72,10 +72,22 @@ async function seedExtras() {
   if ((await prisma.cannedResponse.count()) === 0) {
     await prisma.cannedResponse.createMany({
       data: [
-        { title: 'Talebi aldık', body: 'Merhaba, talebinizi aldık ve incelemeye başladık. En kısa sürede dönüş yapacağız.' },
-        { title: 'Daha fazla bilgi', body: 'Talebinizi değerlendirebilmemiz için bir ekran görüntüsü ve adım adım ne yaptığınızı paylaşır mısınız?' },
-        { title: 'Çözüldü', body: 'Sorununuz çözülmüştür. Başka bir konuda yardımcı olabilirsek çekinmeden yazın. İyi günler dileriz!' },
-        { title: 'Donanım yönlendirme', body: 'Donanım talebiniz ilgili birime iletilmiştir, temin süreci başlatılmıştır.' },
+        {
+          title: 'Talebi aldık',
+          body: 'Merhaba, talebinizi aldık ve incelemeye başladık. En kısa sürede dönüş yapacağız.',
+        },
+        {
+          title: 'Daha fazla bilgi',
+          body: 'Talebinizi değerlendirebilmemiz için bir ekran görüntüsü ve adım adım ne yaptığınızı paylaşır mısınız?',
+        },
+        {
+          title: 'Çözüldü',
+          body: 'Sorununuz çözülmüştür. Başka bir konuda yardımcı olabilirsek çekinmeden yazın. İyi günler dileriz!',
+        },
+        {
+          title: 'Donanım yönlendirme',
+          body: 'Donanım talebiniz ilgili birime iletilmiştir, temin süreci başlatılmıştır.',
+        },
       ],
     });
     console.log('✅ Canned responses seeded');
@@ -127,8 +139,16 @@ async function generateDemoData(departments: Map<string, string>) {
 
   const custHash = await bcrypt.hash('User123!', 10);
   const customerNames = [
-    'Ahmet Yıldız', 'Mehmet Çelik', 'Ayşe Demir', 'Fatma Şahin', 'Can Aydın',
-    'Zeynep Koç', 'Emre Arslan', 'Elif Yılmaz', 'Burak Doğan', 'Selin Aksoy',
+    'Ahmet Yıldız',
+    'Mehmet Çelik',
+    'Ayşe Demir',
+    'Fatma Şahin',
+    'Can Aydın',
+    'Zeynep Koç',
+    'Emre Arslan',
+    'Elif Yılmaz',
+    'Burak Doğan',
+    'Selin Aksoy',
   ];
   const customers: string[] = [];
   for (let i = 0; i < customerNames.length; i++) {
@@ -151,14 +171,57 @@ async function generateDemoData(departments: Map<string, string>) {
   const tech = departments.get('Teknik Destek')!;
   const billing = departments.get('Faturalama')!;
 
-  const themes: { subject: string; message: string; priority: Priority; dept: string; agents: string[]; n: number }[] = [
-    { subject: 'Yeni mouse talebi', message: 'Mouse arızalı, çalışmıyor. Yeni bir mouse rica ediyorum.', priority: 'low', dept: tech, agents: techAgents, n: 6 },
-    { subject: 'VPN bağlanmıyor', message: 'Uzaktan çalışırken VPN bağlanmıyor, sürekli kopuyor. Acil.', priority: 'high', dept: tech, agents: techAgents, n: 5 },
-    { subject: 'Yazıcı çalışmıyor', message: 'Ofis yazıcısı toner hatası veriyor, çıktı alamıyorum.', priority: 'medium', dept: tech, agents: techAgents, n: 4 },
-    { subject: 'Outlook senkronizasyon sorunu', message: 'E-posta senkronize olmuyor, yeni mailler gelmiyor.', priority: 'medium', dept: tech, agents: techAgents, n: 3 },
-    { subject: 'Klavye tuşları takılıyor', message: 'Klavye bozuk, bazı tuşlar çalışmıyor. Yeni klavye gerekli.', priority: 'low', dept: tech, agents: techAgents, n: 3 },
-    { subject: 'Fatura tutarı hatalı', message: 'Bu ayki faturada fazladan ücret yansımış, kontrol eder misiniz?', priority: 'medium', dept: billing, agents: billingAgents, n: 3 },
-  ];
+  const themes: { subject: string; message: string; priority: Priority; dept: string; agents: string[]; n: number }[] =
+    [
+      {
+        subject: 'Yeni mouse talebi',
+        message: 'Mouse arızalı, çalışmıyor. Yeni bir mouse rica ediyorum.',
+        priority: 'low',
+        dept: tech,
+        agents: techAgents,
+        n: 6,
+      },
+      {
+        subject: 'VPN bağlanmıyor',
+        message: 'Uzaktan çalışırken VPN bağlanmıyor, sürekli kopuyor. Acil.',
+        priority: 'high',
+        dept: tech,
+        agents: techAgents,
+        n: 5,
+      },
+      {
+        subject: 'Yazıcı çalışmıyor',
+        message: 'Ofis yazıcısı toner hatası veriyor, çıktı alamıyorum.',
+        priority: 'medium',
+        dept: tech,
+        agents: techAgents,
+        n: 4,
+      },
+      {
+        subject: 'Outlook senkronizasyon sorunu',
+        message: 'E-posta senkronize olmuyor, yeni mailler gelmiyor.',
+        priority: 'medium',
+        dept: tech,
+        agents: techAgents,
+        n: 3,
+      },
+      {
+        subject: 'Klavye tuşları takılıyor',
+        message: 'Klavye bozuk, bazı tuşlar çalışmıyor. Yeni klavye gerekli.',
+        priority: 'low',
+        dept: tech,
+        agents: techAgents,
+        n: 3,
+      },
+      {
+        subject: 'Fatura tutarı hatalı',
+        message: 'Bu ayki faturada fazladan ücret yansımış, kontrol eder misiniz?',
+        priority: 'medium',
+        dept: billing,
+        agents: billingAgents,
+        n: 3,
+      },
+    ];
 
   let custIdx = 0;
   let created = 0;

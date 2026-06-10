@@ -86,8 +86,10 @@ export default {
         general: 'General',
       },
       rec: {
-        hardware: '"{term}" appeared in {count} tickets from {requesters} distinct people — consider bulk procurement / keeping stock.',
-        recurring: '"{term}" recurs across {count} tickets from {requesters} people — implement a permanent / root-cause fix.',
+        hardware:
+          '"{term}" appeared in {count} tickets from {requesters} distinct people — consider bulk procurement / keeping stock.',
+        recurring:
+          '"{term}" recurs across {count} tickets from {requesters} people — implement a permanent / root-cause fix.',
         failure: '"{term}" appears as a failure in {count} tickets — run a root-cause analysis.',
         general: '"{term}" appears in {count} tickets.',
       },
@@ -381,11 +383,13 @@ export default {
     save: 'Save',
     saved: 'SLA targets updated.',
     jobsTitle: 'Background Jobs (Worker)',
-    jobsSubtitle: 'A worker service running on Bull + Redis. The daily digest email is sent automatically each day; you can trigger it now below.',
+    jobsSubtitle:
+      'A worker service running on Bull + Redis. The daily digest email is sent automatically each day; you can trigger it now below.',
     runDigest: 'Send daily digest now',
     digestQueued: 'Digest job queued; the worker is sending it (Mailpit).',
     exportTitle: 'Ticket Export (File Microservice)',
-    exportSubtitle: 'Tickets are rendered as Excel/PDF by a separate file microservice with no database connection. The backend calls it and returns the file.',
+    exportSubtitle:
+      'Tickets are rendered as Excel/PDF by a separate file microservice with no database connection. The backend calls it and returns the file.',
     downloadExcel: 'Download Excel',
     downloadPdf: 'Download PDF',
     exportError: 'Could not generate file',
@@ -442,4 +446,4 @@ export default {
     unread: 'unread',
     justNow: 'just now',
   },
-}
+};

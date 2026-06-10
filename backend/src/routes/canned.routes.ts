@@ -1,12 +1,7 @@
 import { Router } from 'express';
 import { authenticate, requireStaff } from '../middleware/auth';
 import { asyncHandler } from '../utils/asyncHandler';
-import {
-  createCanned,
-  deleteCanned,
-  listCanned,
-  updateCanned,
-} from '../controllers/canned.controller';
+import { createCanned, deleteCanned, listCanned, updateCanned } from '../controllers/canned.controller';
 
 const router = Router();
 router.use(authenticate, requireStaff);

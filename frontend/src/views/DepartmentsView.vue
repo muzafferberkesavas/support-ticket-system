@@ -134,18 +134,31 @@ onMounted(load);
 
   <div v-if="loading" class="skeleton-table">
     <div v-for="i in 4" :key="i" class="skeleton-row">
-      <Skeleton width="30%" height="1.1rem" /><Skeleton width="40%" height="1rem" /><Skeleton width="60px" height="1.5rem" borderRadius="16px" />
+      <Skeleton width="30%" height="1.1rem" /><Skeleton width="40%" height="1rem" /><Skeleton
+        width="60px"
+        height="1.5rem"
+        borderRadius="16px"
+      />
     </div>
   </div>
 
   <DataTable v-else :value="departments" dataKey="id" stripedRows>
-    <template #empty><div class="empty-state"><i class="pi pi-sitemap" /><p>{{ t('departments.empty') }}</p></div></template>
+    <template #empty
+      ><div class="empty-state">
+        <i class="pi pi-sitemap" />
+        <p>{{ t('departments.empty') }}</p>
+      </div></template
+    >
 
     <Column :header="t('departments.fields.name')" style="min-width: 180px">
-      <template #body="{ data }"><span style="font-weight: 600">{{ data.name }}</span></template>
+      <template #body="{ data }"
+        ><span style="font-weight: 600">{{ data.name }}</span></template
+      >
     </Column>
     <Column :header="t('departments.fields.description')" style="min-width: 220px">
-      <template #body="{ data }"><span class="muted">{{ data.description || '—' }}</span></template>
+      <template #body="{ data }"
+        ><span class="muted">{{ data.description || '—' }}</span></template
+      >
     </Column>
     <Column :header="t('departments.fields.members')" style="min-width: 180px">
       <template #body="{ data }">
@@ -156,7 +169,9 @@ onMounted(load);
       </template>
     </Column>
     <Column :header="t('departments.fields.ticketCount')" style="width: 90px">
-      <template #body="{ data }"><Tag :value="String(data._count?.tickets ?? 0)" icon="pi pi-ticket" severity="info" rounded /></template>
+      <template #body="{ data }"
+        ><Tag :value="String(data._count?.tickets ?? 0)" icon="pi pi-ticket" severity="info" rounded
+      /></template>
     </Column>
     <Column :header="t('common.actions')" style="width: 110px">
       <template #body="{ data }">
@@ -166,23 +181,60 @@ onMounted(load);
     </Column>
   </DataTable>
 
-  <Dialog v-model:visible="dialogVisible" :header="editing ? t('departments.editTitle') : t('departments.newTitle')" modal :style="{ width: '500px' }" :draggable="false">
+  <Dialog
+    v-model:visible="dialogVisible"
+    :header="editing ? t('departments.editTitle') : t('departments.newTitle')"
+    modal
+    :style="{ width: '500px' }"
+    :draggable="false"
+  >
     <div class="field">
       <label>{{ t('departments.fields.name') }} *</label>
-      <InputText v-model="form.name" :placeholder="t('departments.placeholders.name')" :invalid="!!errors.name" maxlength="80" />
+      <InputText
+        v-model="form.name"
+        :placeholder="t('departments.placeholders.name')"
+        :invalid="!!errors.name"
+        maxlength="80"
+      />
       <small v-if="errors.name" class="field-error">{{ errors.name }}</small>
     </div>
     <div class="field">
       <label>{{ t('departments.fields.description') }}</label>
-      <Textarea v-model="form.description" rows="2" autoResize :placeholder="t('departments.placeholders.description')" maxlength="300" />
+      <Textarea
+        v-model="form.description"
+        rows="2"
+        autoResize
+        :placeholder="t('departments.placeholders.description')"
+        maxlength="300"
+      />
     </div>
     <div class="field">
       <label>{{ t('departments.fields.members') }}</label>
-      <MultiSelect v-model="form.memberIds" :options="staffOptions" optionLabel="label" optionValue="value" :placeholder="t('departments.placeholders.members')" display="chip" filter class="full-width" />
+      <MultiSelect
+        v-model="form.memberIds"
+        :options="staffOptions"
+        optionLabel="label"
+        optionValue="value"
+        :placeholder="t('departments.placeholders.members')"
+        display="chip"
+        filter
+        class="full-width"
+      />
     </div>
     <template #footer>
-      <Button :label="t('common.cancel')" text severity="secondary" @click="dialogVisible = false" :disabled="submitting" />
-      <Button :label="editing ? t('common.save') : t('common.create')" icon="pi pi-check" :loading="submitting" @click="submit" />
+      <Button
+        :label="t('common.cancel')"
+        text
+        severity="secondary"
+        @click="dialogVisible = false"
+        :disabled="submitting"
+      />
+      <Button
+        :label="editing ? t('common.save') : t('common.create')"
+        icon="pi pi-check"
+        :loading="submitting"
+        @click="submit"
+      />
     </template>
   </Dialog>
 </template>

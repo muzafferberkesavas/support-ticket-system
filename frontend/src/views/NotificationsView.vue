@@ -103,7 +103,10 @@ onMounted(() => {
   cursor: pointer;
   font: inherit;
   color: var(--text);
-  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 .notif-row:hover {
   background: var(--surface-hover);

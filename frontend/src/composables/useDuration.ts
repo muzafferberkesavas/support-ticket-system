@@ -10,7 +10,9 @@ export function useDuration() {
     if (m < 1440) {
       const h = Math.floor(m / 60);
       const r = m % 60;
-      return r ? `${t('analytics.hours', { n: h })} ${t('analytics.minutes', { n: r })}` : t('analytics.hours', { n: h });
+      return r
+        ? `${t('analytics.hours', { n: h })} ${t('analytics.minutes', { n: r })}`
+        : t('analytics.hours', { n: h });
     }
     return t('analytics.days', { n: (m / 1440).toFixed(1) });
   };

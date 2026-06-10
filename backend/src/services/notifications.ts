@@ -10,11 +10,7 @@ export interface NotificationInput {
 
 // Persists a notification per recipient and pushes it live to their personal room.
 // Fire-and-forget: failures are logged, never thrown into the request flow.
-export function notifyUsers(
-  userIds: string[],
-  input: NotificationInput,
-  excludeUserId?: string,
-): void {
+export function notifyUsers(userIds: string[], input: NotificationInput, excludeUserId?: string): void {
   const targets = [...new Set(userIds)].filter((id) => id && id !== excludeUserId);
   if (!targets.length) return;
 
@@ -46,11 +42,7 @@ export function notifyUsers(
   })();
 }
 
-export function notifyDepartment(
-  departmentId: string,
-  input: NotificationInput,
-  excludeUserId?: string,
-): void {
+export function notifyDepartment(departmentId: string, input: NotificationInput, excludeUserId?: string): void {
   void (async () => {
     try {
       const members = await prisma.departmentMember.findMany({

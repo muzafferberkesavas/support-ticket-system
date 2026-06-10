@@ -68,9 +68,7 @@ function removeFile(i: number) {
 
 const priorityOptions = computed(() => PRIORITY_VALUES.map((v) => ({ label: t(`priority.${v}`), value: v })));
 const statusOptions = computed(() => STATUS_VALUES.map((v) => ({ label: t(`status.${v}`), value: v })));
-const departmentOptions = computed(() =>
-  departments.value.map((d) => ({ label: d.name, value: d.id })),
-);
+const departmentOptions = computed(() => departments.value.map((d) => ({ label: d.name, value: d.id })));
 
 // Assignable people = members of the selected department.
 const assigneeOptions = computed(() => {
@@ -119,23 +117,20 @@ watch(
 );
 
 // Estimated response/resolution time (debounced) for the chosen priority/department.
-watch(
-  [() => form.priority, () => form.departmentId, () => props.visible],
-  () => {
-    if (!props.visible) {
+watch([() => form.priority, () => form.departmentId, () => props.visible], () => {
+  if (!props.visible) {
+    estimate.value = null;
+    return;
+  }
+  clearTimeout(estTimer);
+  estTimer = window.setTimeout(async () => {
+    try {
+      estimate.value = await ticketService.estimate(form.priority, form.departmentId);
+    } catch {
       estimate.value = null;
-      return;
     }
-    clearTimeout(estTimer);
-    estTimer = window.setTimeout(async () => {
-      try {
-        estimate.value = await ticketService.estimate(form.priority, form.departmentId);
-      } catch {
-        estimate.value = null;
-      }
-    }, 300);
-  },
-);
+  }, 300);
+});
 
 function validate(): boolean {
   Object.keys(errors).forEach((k) => delete errors[k]);
@@ -164,16 +159,31 @@ async function submit() {
         ...base,
         ...(props.canEditStatus ? { status: form.status } : {}),
       });
-      toast.add({ severity: 'success', summary: t('tickets.detail.saved'), detail: t('tickets.detail.updated'), life: 3000 });
+      toast.add({
+        severity: 'success',
+        summary: t('tickets.detail.saved'),
+        detail: t('tickets.detail.updated'),
+        life: 3000,
+      });
     } else {
       saved = await ticketService.create(base);
-      toast.add({ severity: 'success', summary: t('tickets.detail.saved'), detail: t('tickets.detail.created'), life: 3000 });
+      toast.add({
+        severity: 'success',
+        summary: t('tickets.detail.saved'),
+        detail: t('tickets.detail.created'),
+        life: 3000,
+      });
     }
     if (files.value.length) {
       try {
         await ticketService.uploadAttachments(saved.id, files.value);
       } catch (e) {
-        toast.add({ severity: 'warn', summary: t('tickets.detail.uploadFailed'), detail: extractErrorMessage(e), life: 4000 });
+        toast.add({
+          severity: 'warn',
+          summary: t('tickets.detail.uploadFailed'),
+          detail: extractErrorMessage(e),
+          life: 4000,
+        });
       }
     }
     emit('saved', saved);
@@ -201,36 +211,69 @@ async function submit() {
 
       <div class="field">
         <label for="subject">{{ t('tickets.fields.subject') }} *</label>
-        <InputText id="subject" v-model="form.subject" :placeholder="t('tickets.placeholders.subject')" :invalid="!!errors.subject" maxlength="150" autofocus />
+        <InputText
+          id="subject"
+          v-model="form.subject"
+          :placeholder="t('tickets.placeholders.subject')"
+          :invalid="!!errors.subject"
+          maxlength="150"
+          autofocus
+        />
         <small v-if="errors.subject" class="field-error">{{ errors.subject }}</small>
       </div>
 
       <div class="field">
         <label for="message">{{ t('tickets.fields.message') }} *</label>
-        <Textarea id="message" v-model="form.message" rows="5" autoResize :placeholder="t('tickets.placeholders.message')" :invalid="!!errors.message" maxlength="5000" />
+        <Textarea
+          id="message"
+          v-model="form.message"
+          rows="5"
+          autoResize
+          :placeholder="t('tickets.placeholders.message')"
+          :invalid="!!errors.message"
+          maxlength="5000"
+        />
         <small v-if="errors.message" class="field-error">{{ errors.message }}</small>
       </div>
 
       <div class="form-row">
         <div class="field" style="flex: 1">
           <label>{{ t('tickets.fields.priority') }}</label>
-          <Select v-model="form.priority" :options="priorityOptions" optionLabel="label" optionValue="value" class="full-width" />
+          <Select
+            v-model="form.priority"
+            :options="priorityOptions"
+            optionLabel="label"
+            optionValue="value"
+            class="full-width"
+          />
         </div>
         <div class="field" style="flex: 1">
-          <label>{{ t('tickets.fields.category') }} <span class="muted">({{ t('common.optional') }})</span></label>
+          <label
+            >{{ t('tickets.fields.category') }} <span class="muted">({{ t('common.optional') }})</span></label
+          >
           <InputText v-model="form.category" :placeholder="t('tickets.placeholders.category')" maxlength="80" />
         </div>
       </div>
 
       <div class="field">
-        <label>{{ t('tickets.fields.tags') }} <span class="muted">({{ t('common.optional') }})</span></label>
+        <label
+          >{{ t('tickets.fields.tags') }} <span class="muted">({{ t('common.optional') }})</span></label
+        >
         <TagsInput v-model="form.tags" :placeholder="t('tickets.placeholders.tags')" />
       </div>
 
       <div class="form-row">
         <div class="field" style="flex: 1">
           <label>{{ t('tickets.fields.department') }}</label>
-          <Select v-model="form.departmentId" :options="departmentOptions" optionLabel="label" optionValue="value" :placeholder="t('tickets.placeholders.department')" showClear class="full-width" />
+          <Select
+            v-model="form.departmentId"
+            :options="departmentOptions"
+            optionLabel="label"
+            optionValue="value"
+            :placeholder="t('tickets.placeholders.department')"
+            showClear
+            class="full-width"
+          />
         </div>
         <div class="field" style="flex: 1">
           <label>{{ t('tickets.fields.assignees') }}</label>
@@ -239,7 +282,9 @@ async function submit() {
             :options="assigneeOptions"
             optionLabel="label"
             optionValue="value"
-            :placeholder="form.departmentId ? t('tickets.placeholders.assignees') : t('tickets.placeholders.department')"
+            :placeholder="
+              form.departmentId ? t('tickets.placeholders.assignees') : t('tickets.placeholders.department')
+            "
             :disabled="!form.departmentId || assigneeOptions.length === 0"
             display="chip"
             class="full-width"
@@ -249,13 +294,28 @@ async function submit() {
 
       <div v-if="isEdit && canEditStatus" class="field">
         <label>{{ t('tickets.fields.status') }}</label>
-        <Select v-model="form.status" :options="statusOptions" optionLabel="label" optionValue="value" class="full-width" />
+        <Select
+          v-model="form.status"
+          :options="statusOptions"
+          optionLabel="label"
+          optionValue="value"
+          class="full-width"
+        />
       </div>
 
       <div class="field">
-        <label>{{ t('tickets.detail.attachments') }} <span class="muted">({{ t('common.optional') }})</span></label>
+        <label
+          >{{ t('tickets.detail.attachments') }} <span class="muted">({{ t('common.optional') }})</span></label
+        >
         <div class="att-picker">
-          <Button type="button" :label="t('tickets.detail.addFiles')" icon="pi pi-paperclip" outlined size="small" @click="pickFiles" />
+          <Button
+            type="button"
+            :label="t('tickets.detail.addFiles')"
+            icon="pi pi-paperclip"
+            outlined
+            size="small"
+            @click="pickFiles"
+          />
           <span class="muted att-hint">{{ t('tickets.detail.attachHint', { mb: maxMb }) }}</span>
         </div>
         <input
@@ -282,8 +342,19 @@ async function submit() {
     </form>
 
     <template #footer>
-      <Button :label="t('common.cancel')" text severity="secondary" @click="emit('update:visible', false)" :disabled="submitting" />
-      <Button :label="isEdit ? t('common.save') : t('common.create')" icon="pi pi-check" :loading="submitting" @click="submit" />
+      <Button
+        :label="t('common.cancel')"
+        text
+        severity="secondary"
+        @click="emit('update:visible', false)"
+        :disabled="submitting"
+      />
+      <Button
+        :label="isEdit ? t('common.save') : t('common.create')"
+        icon="pi pi-check"
+        :loading="submitting"
+        @click="submit"
+      />
     </template>
   </Dialog>
 </template>

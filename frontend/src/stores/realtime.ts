@@ -38,16 +38,13 @@ export const useRealtimeStore = defineStore('realtime', {
         this.viewers[p.ticketId] = p.viewers;
       });
 
-      socket.on(
-        'typing',
-        (p: { ticketId: string; user: PublicUser; isTyping: boolean }) => {
-          const list = (this.typing[p.ticketId] ?? []).filter((e) => e.user.id !== p.user.id);
-          if (p.isTyping) {
-            list.push({ user: p.user, expires: Date.now() + 4000 });
-          }
-          this.typing[p.ticketId] = list;
-        },
-      );
+      socket.on('typing', (p: { ticketId: string; user: PublicUser; isTyping: boolean }) => {
+        const list = (this.typing[p.ticketId] ?? []).filter((e) => e.user.id !== p.user.id);
+        if (p.isTyping) {
+          list.push({ user: p.user, expires: Date.now() + 4000 });
+        }
+        this.typing[p.ticketId] = list;
+      });
     },
 
     subscribeTicket(ticketId: string) {

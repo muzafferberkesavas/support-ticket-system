@@ -111,9 +111,7 @@ const departmentOptions = computed(() => departments.value.map((d) => ({ label: 
 const filteredUsers = computed(() => {
   const q = search.value.trim().toLowerCase();
   if (!q) return users.value;
-  return users.value.filter(
-    (u) => u.email.toLowerCase().includes(q) || (u.fullName || '').toLowerCase().includes(q),
-  );
+  return users.value.filter((u) => u.email.toLowerCase().includes(q) || (u.fullName || '').toLowerCase().includes(q));
 });
 
 async function load() {
@@ -179,12 +177,21 @@ onMounted(load);
 
   <div v-if="loading" class="skeleton-table">
     <div v-for="i in 6" :key="i" class="skeleton-row">
-      <Skeleton shape="circle" size="2.2rem" /><Skeleton width="30%" height="1rem" /><Skeleton width="80px" height="1.5rem" borderRadius="16px" />
+      <Skeleton shape="circle" size="2.2rem" /><Skeleton width="30%" height="1rem" /><Skeleton
+        width="80px"
+        height="1.5rem"
+        borderRadius="16px"
+      />
     </div>
   </div>
 
   <DataTable v-else :value="filteredUsers" dataKey="id" stripedRows paginator :rows="15">
-    <template #empty><div class="empty-state"><i class="pi pi-users" /><p>{{ t('users.empty') }}</p></div></template>
+    <template #empty
+      ><div class="empty-state">
+        <i class="pi pi-users" />
+        <p>{{ t('users.empty') }}</p>
+      </div></template
+    >
 
     <Column :header="t('users.fields.name')" style="min-width: 220px">
       <template #body="{ data }">
@@ -203,16 +210,26 @@ onMounted(load);
     <Column :header="t('users.fields.departments')" style="min-width: 180px">
       <template #body="{ data }">
         <div v-if="data.memberships?.length" style="display: flex; flex-wrap: wrap; gap: 0.25rem">
-          <Tag v-for="m in data.memberships" :key="m.department.id" :value="m.department.name" severity="secondary" icon="pi pi-sitemap" />
+          <Tag
+            v-for="m in data.memberships"
+            :key="m.department.id"
+            :value="m.department.name"
+            severity="secondary"
+            icon="pi pi-sitemap"
+          />
         </div>
         <span v-else class="muted">—</span>
       </template>
     </Column>
     <Column :header="t('users.fields.tickets')" style="width: 90px">
-      <template #body="{ data }"><Tag :value="String(data._count?.tickets ?? 0)" icon="pi pi-ticket" severity="info" rounded /></template>
+      <template #body="{ data }"
+        ><Tag :value="String(data._count?.tickets ?? 0)" icon="pi pi-ticket" severity="info" rounded
+      /></template>
     </Column>
     <Column :header="t('users.fields.createdAt')" style="min-width: 140px">
-      <template #body="{ data }"><span class="muted">{{ formatDateTime(data.createdAt, ui.locale) }}</span></template>
+      <template #body="{ data }"
+        ><span class="muted">{{ formatDateTime(data.createdAt, ui.locale) }}</span></template
+      >
     </Column>
     <Column :header="t('common.actions')" style="width: 110px">
       <template #body="{ data }">
@@ -229,7 +246,13 @@ onMounted(load);
     </Column>
   </DataTable>
 
-  <Dialog v-model:visible="dialogVisible" :header="t('users.editTitle')" modal :style="{ width: '460px' }" :draggable="false">
+  <Dialog
+    v-model:visible="dialogVisible"
+    :header="t('users.editTitle')"
+    modal
+    :style="{ width: '460px' }"
+    :draggable="false"
+  >
     <div v-if="editing" class="field">
       <label>{{ t('users.fields.email') }}</label>
       <InputText :modelValue="editing.email" disabled class="full-width" />
@@ -240,24 +263,58 @@ onMounted(load);
     </div>
     <div class="field">
       <label>{{ t('users.fields.role') }}</label>
-      <Select v-model="form.role" :options="roleOptions" optionLabel="label" optionValue="value" class="full-width" :disabled="editing?.id === auth.user?.id" />
+      <Select
+        v-model="form.role"
+        :options="roleOptions"
+        optionLabel="label"
+        optionValue="value"
+        class="full-width"
+        :disabled="editing?.id === auth.user?.id"
+      />
       <small v-if="editing?.id === auth.user?.id" class="muted">{{ t('users.selfRoleError') }}</small>
     </div>
     <div class="field">
       <label>{{ t('users.fields.departments') }}</label>
-      <MultiSelect v-model="form.departmentIds" :options="departmentOptions" optionLabel="label" optionValue="value" :placeholder="t('tickets.placeholders.department')" display="chip" filter class="full-width" />
+      <MultiSelect
+        v-model="form.departmentIds"
+        :options="departmentOptions"
+        optionLabel="label"
+        optionValue="value"
+        :placeholder="t('tickets.placeholders.department')"
+        display="chip"
+        filter
+        class="full-width"
+      />
     </div>
     <template #footer>
-      <Button :label="t('common.cancel')" text severity="secondary" @click="dialogVisible = false" :disabled="submitting" />
+      <Button
+        :label="t('common.cancel')"
+        text
+        severity="secondary"
+        @click="dialogVisible = false"
+        :disabled="submitting"
+      />
       <Button :label="t('common.save')" icon="pi pi-check" :loading="submitting" @click="submit" />
     </template>
   </Dialog>
 
   <!-- Create user -->
-  <Dialog v-model:visible="createVisible" :header="t('users.createTitle')" modal :style="{ width: '460px' }" :draggable="false">
+  <Dialog
+    v-model:visible="createVisible"
+    :header="t('users.createTitle')"
+    modal
+    :style="{ width: '460px' }"
+    :draggable="false"
+  >
     <div class="field">
       <label>{{ t('users.fields.email') }} *</label>
-      <InputText v-model="createForm.email" type="email" :placeholder="t('auth.emailPlaceholder')" :invalid="!!createErrors.email" class="full-width" />
+      <InputText
+        v-model="createForm.email"
+        type="email"
+        :placeholder="t('auth.emailPlaceholder')"
+        :invalid="!!createErrors.email"
+        class="full-width"
+      />
       <small v-if="createErrors.email" class="field-error">{{ createErrors.email }}</small>
     </div>
     <div class="field">
@@ -266,20 +323,47 @@ onMounted(load);
     </div>
     <div class="field">
       <label>{{ t('users.fields.role') }}</label>
-      <Select v-model="createForm.role" :options="roleOptions" optionLabel="label" optionValue="value" class="full-width" />
+      <Select
+        v-model="createForm.role"
+        :options="roleOptions"
+        optionLabel="label"
+        optionValue="value"
+        class="full-width"
+      />
     </div>
     <div class="field">
       <label>{{ t('users.fields.departments') }}</label>
-      <MultiSelect v-model="createForm.departmentIds" :options="departmentOptions" optionLabel="label" optionValue="value" :placeholder="t('tickets.placeholders.department')" display="chip" filter class="full-width" />
+      <MultiSelect
+        v-model="createForm.departmentIds"
+        :options="departmentOptions"
+        optionLabel="label"
+        optionValue="value"
+        :placeholder="t('tickets.placeholders.department')"
+        display="chip"
+        filter
+        class="full-width"
+      />
     </div>
     <template #footer>
-      <Button :label="t('common.cancel')" text severity="secondary" @click="createVisible = false" :disabled="creating" />
+      <Button
+        :label="t('common.cancel')"
+        text
+        severity="secondary"
+        @click="createVisible = false"
+        :disabled="creating"
+      />
       <Button :label="t('common.create')" icon="pi pi-check" :loading="creating" @click="submitCreate" />
     </template>
   </Dialog>
 
   <!-- Temp password result -->
-  <Dialog v-model:visible="tempPasswordVisible" :header="t('users.tempPasswordTitle')" modal :style="{ width: '420px' }" :draggable="false">
+  <Dialog
+    v-model:visible="tempPasswordVisible"
+    :header="t('users.tempPasswordTitle')"
+    modal
+    :style="{ width: '420px' }"
+    :draggable="false"
+  >
     <p class="muted" style="margin-top: 0">{{ t('users.tempPasswordInfo') }}</p>
     <div class="temp-pass">
       <span class="temp-pass-label">{{ t('users.tempPasswordLabel') }}</span>

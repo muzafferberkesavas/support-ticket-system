@@ -55,35 +55,75 @@ function logout() {
   <div class="auth-shell">
     <div class="auth-card">
       <div class="auth-top">
-        <Button :icon="ui.isDark ? 'pi pi-sun' : 'pi pi-moon'" text rounded severity="secondary" @click="ui.toggleTheme()" />
+        <Button
+          :icon="ui.isDark ? 'pi pi-sun' : 'pi pi-moon'"
+          text
+          rounded
+          severity="secondary"
+          @click="ui.toggleTheme()"
+        />
         <Button text rounded severity="secondary" @click="ui.toggleLocale()">
           <span style="font-weight: 700; font-size: 0.82rem">{{ ui.locale === 'tr' ? 'TR' : 'EN' }}</span>
         </Button>
       </div>
 
-      <div class="auth-brand"><BrandLogo :size="44" /><span>{{ t('app.name') }}</span></div>
+      <div class="auth-brand">
+        <BrandLogo :size="44" /><span>{{ t('app.name') }}</span>
+      </div>
       <p class="auth-subtitle">{{ t('auth.changeTitle') }}</p>
       <p class="muted" style="margin: -0.5rem 0 1.25rem; font-size: 0.9rem">{{ t('auth.changeSubtitle') }}</p>
 
-      <Message v-if="serverError" severity="error" :closable="false" class="full-width" style="margin-bottom: 1rem">{{ serverError }}</Message>
+      <Message v-if="serverError" severity="error" :closable="false" class="full-width" style="margin-bottom: 1rem">{{
+        serverError
+      }}</Message>
 
       <form @submit.prevent="submit">
         <div class="field">
           <label>{{ t('auth.currentPassword') }}</label>
-          <Password v-model="form.current" toggleMask :feedback="false" placeholder="••••••••" :invalid="!!errors.current" inputClass="full-width" class="full-width" />
+          <Password
+            v-model="form.current"
+            toggleMask
+            :feedback="false"
+            placeholder="••••••••"
+            :invalid="!!errors.current"
+            inputClass="full-width"
+            class="full-width"
+          />
           <small v-if="errors.current" class="field-error">{{ errors.current }}</small>
         </div>
         <div class="field">
           <label>{{ t('auth.newPassword') }}</label>
-          <Password v-model="form.password" toggleMask placeholder="••••••••" :invalid="!!errors.password" inputClass="full-width" class="full-width" />
+          <Password
+            v-model="form.password"
+            toggleMask
+            placeholder="••••••••"
+            :invalid="!!errors.password"
+            inputClass="full-width"
+            class="full-width"
+          />
           <small v-if="errors.password" class="field-error">{{ errors.password }}</small>
         </div>
         <div class="field">
           <label>{{ t('auth.passwordConfirm') }}</label>
-          <Password v-model="form.confirm" toggleMask :feedback="false" placeholder="••••••••" :invalid="!!errors.confirm" inputClass="full-width" class="full-width" />
+          <Password
+            v-model="form.confirm"
+            toggleMask
+            :feedback="false"
+            placeholder="••••••••"
+            :invalid="!!errors.confirm"
+            inputClass="full-width"
+            class="full-width"
+          />
           <small v-if="errors.confirm" class="field-error">{{ errors.confirm }}</small>
         </div>
-        <Button type="submit" :label="t('auth.changeSubmit')" icon="pi pi-check" class="full-width" :loading="loading" style="margin-top: 0.5rem" />
+        <Button
+          type="submit"
+          :label="t('auth.changeSubmit')"
+          icon="pi pi-check"
+          class="full-width"
+          :loading="loading"
+          style="margin-top: 0.5rem"
+        />
       </form>
 
       <p class="auth-footer">
