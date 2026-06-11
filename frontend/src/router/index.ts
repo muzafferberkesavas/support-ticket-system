@@ -70,6 +70,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, requiresManager: true },
   },
   {
+    path: '/operations',
+    name: 'operations',
+    component: () => import('@/views/OperationsView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('@/views/SettingsView.vue'),

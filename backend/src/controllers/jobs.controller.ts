@@ -5,6 +5,14 @@ import { exportFiltersSchema } from '../schemas';
 import type { Principal } from '../services/access';
 import { buildExportData } from '../services/exportData';
 import { generateFile, FILE_META, type FileFormat } from '../services/fileService';
+import { getJobStats, getRecentOps } from '../realtime/jobStats';
+
+// GET /jobs/stats — operasyon dashboard'unun ilk yükü: anlık kuyruk sayaçları +
+// son işlemler. Canlı güncellemeler ayrıca socket ('job:stats'/'job:event') ile gelir.
+export async function getStats(_req: Request, res: Response): Promise<void> {
+  const [stats, recent] = await Promise.all([getJobStats(), getRecentOps()]);
+  res.json({ stats, recent });
+}
 
 // POST /jobs/digest — günlük özeti hemen kuyruğa al (admin, test amaçlı).
 // Backend job'u yalnızca Redis'e iletir; worker onu alıp çalıştırır.

@@ -77,6 +77,13 @@ const adminLinks = computed<NavLink[]>(() => [
     show: auth.isAdmin,
   },
   { key: 'users', label: t('nav.users'), icon: 'pi pi-users', to: '/users', show: auth.isAdmin },
+  {
+    key: 'operations',
+    label: t('nav.operations'),
+    icon: 'pi pi-server',
+    to: '/operations',
+    show: auth.isAdmin,
+  },
   { key: 'settings', label: t('nav.settings'), icon: 'pi pi-cog', to: '/settings', show: auth.isAdmin },
 ]);
 

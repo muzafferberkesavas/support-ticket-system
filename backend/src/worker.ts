@@ -26,6 +26,7 @@ import { runSlaSweep } from './services/slaSweep';
 import { refreshSlaTargets } from './services/sla';
 import { buildExportData, buildCsv } from './services/exportData';
 import { generateFile, FILE_META, type FileFormat } from './services/fileService';
+import { emitJobStats, emitJobEvent } from './realtime/jobStats';
 import { env } from './env';
 
 // ── Günlük özet: her personel için açık / gecikmiş / atanmamış işlerin özeti ──
@@ -132,8 +133,17 @@ mailQueue.process(JOB_EXPORT, async (job) => {
   return { count, format };
 });
 
+// ── Operasyon dashboard'una canlı job telemetrisi ────────────────────
+// Sayaçlar her olayda MUTLAK snapshot olarak (throttle'lı) admin odasına gider.
+mailQueue.on('active', () => emitJobStats());
+mailQueue.on('completed', (job) => {
+  emitJobStats();
+  emitJobEvent(job, 'completed');
+});
 mailQueue.on('failed', (job, err) => {
   console.error(`❌ Job ${job.name}#${job.id} failed:`, err.message);
+  emitJobStats();
+  if (job) emitJobEvent(job, 'failed');
 });
 
 // ── Bull Board (queue izleme panosu) ─────────────────────────────────
