@@ -1,4 +1,4 @@
-// Operational error with an HTTP status code, thrown deliberately by the app.
+// HTTP durum koduna sahip, uygulama tarafından bilerek fırlatılan operasyonel hata.
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly details?: unknown;

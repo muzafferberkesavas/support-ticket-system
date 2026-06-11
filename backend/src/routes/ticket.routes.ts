@@ -22,10 +22,10 @@ import {
 
 const router = Router();
 
-// All ticket routes require authentication.
+// Tüm talep route'ları kimlik doğrulaması gerektirir.
 router.use(authenticate);
 
-// Static paths before /:id so they aren't swallowed by the param route.
+// Statik yollar /:id'den önce gelir ki param route tarafından yutulmasınlar.
 router.get('/estimate', asyncHandler(getEstimate));
 router.get('/tags', asyncHandler(listTags));
 

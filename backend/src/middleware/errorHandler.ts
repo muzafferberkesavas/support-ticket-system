@@ -3,9 +3,9 @@ import { Prisma } from '@prisma/client';
 import { ZodError } from 'zod';
 import { AppError } from '../utils/AppError';
 
-// Centralized error handler — turns any thrown error into a clean JSON response.
+// Merkezi hata yöneticisi — fırlatılan herhangi bir hatayı temiz bir JSON yanıtına dönüştürür.
 export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
-  // Validation errors from zod
+  // Zod'dan gelen doğrulama hataları
   if (err instanceof ZodError) {
     res.status(422).json({
       error: 'Validation failed',
@@ -14,13 +14,13 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     return;
   }
 
-  // Known operational errors
+  // Bilinen operasyonel hatalar
   if (err instanceof AppError) {
     res.status(err.statusCode).json({ error: err.message, details: err.details });
     return;
   }
 
-  // File upload (multer) errors
+  // Dosya yükleme (multer) hataları
   if (err instanceof Error && err.message === 'UNSUPPORTED_FILE_TYPE') {
     res.status(422).json({ error: 'Unsupported file type' });
     return;
@@ -35,7 +35,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     return;
   }
 
-  // Prisma: unique constraint violation
+  // Prisma: unique constraint (benzersizlik kısıtı) ihlali
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     if (err.code === 'P2002') {
       res.status(409).json({ error: 'A record with this value already exists' });
@@ -51,7 +51,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
   res.status(500).json({ error: 'Internal server error' });
 }
 
-// 404 fallback for unknown routes.
+// Bilinmeyen route'lar için 404 yedeği.
 export function notFound(_req: Request, res: Response): void {
   res.status(404).json({ error: 'Route not found' });
 }

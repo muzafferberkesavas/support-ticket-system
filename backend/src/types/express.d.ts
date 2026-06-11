@@ -1,4 +1,4 @@
-// Augment Express Request with the authenticated user payload.
+// Express Request'i, kimliği doğrulanmış kullanıcı payload'ı ile genişletir.
 import 'express';
 
 declare global {

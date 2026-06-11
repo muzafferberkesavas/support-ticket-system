@@ -5,7 +5,7 @@ import { AppError } from '../utils/AppError';
 import { createCannedSchema, updateCannedSchema } from '../schemas';
 import { getUserDepartmentIds, type Principal } from '../services/access';
 
-// GET /canned — templates available to the current staff member.
+// GET /canned — mevcut staff üyesinin erişebileceği şablonlar.
 export async function listCanned(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
 
@@ -14,7 +14,7 @@ export async function listCanned(req: Request, res: Response): Promise<void> {
     const deptIds = await getUserDepartmentIds(user.id);
     where = {
       OR: [
-        { departmentId: null }, // global
+        { departmentId: null }, // genel
         ...(deptIds.length ? [{ departmentId: { in: deptIds } }] : []),
         { createdById: user.id },
       ],
@@ -34,7 +34,7 @@ export async function createCanned(req: Request, res: Response): Promise<void> {
   res.status(201).json({ response });
 }
 
-// PUT /canned/:id (owner or admin)
+// PUT /canned/:id (sahibi veya admin)
 export async function updateCanned(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const data = updateCannedSchema.parse(req.body);
@@ -54,7 +54,7 @@ export async function updateCanned(req: Request, res: Response): Promise<void> {
   res.json({ response });
 }
 
-// DELETE /canned/:id (owner or admin)
+// DELETE /canned/:id (sahibi veya admin)
 export async function deleteCanned(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const existing = await prisma.cannedResponse.findUnique({ where: { id: req.params.id } });

@@ -13,8 +13,8 @@ interface NotifInput {
   actor: string;
 }
 
-// Persist a notification per recipient + push it live via the Redis emitter
-// (the worker has no Socket.IO server of its own).
+// Her alıcı için bir bildirim kaydeder + Redis emitter üzerinden canlı olarak gönderir
+// (worker'ın kendine ait bir Socket.IO sunucusu yoktur).
 async function notifyAndPersist(userIds: string[], input: NotifInput): Promise<void> {
   for (const userId of [...new Set(userIds)].filter(Boolean)) {
     const n = await prisma.notification.create({
@@ -54,15 +54,15 @@ function broadcastTicketUpdated(t: { id: string; departmentId: string | null }):
   if (t.departmentId) emitToRoom(rooms.dept(t.departmentId), 'ticket:updated', { id: t.id });
 }
 
-// One sweep: auto-escalate SLA-breached tickets + remind on stale tickets.
-// Runs in the worker as a Bull repeatable (cron) job.
+// Tek tarama: SLA aşan talepleri otomatik yükseltir + bayatlamış talepler için hatırlatır.
+// Worker'da Bull tekrarlanabilir (cron) iş olarak çalışır.
 export async function runSlaSweep(): Promise<{ escalated: number; reminded: number }> {
   const now = Date.now();
   const slaTargets = getSlaTargets();
   let escalated = 0;
   let reminded = 0;
 
-  // 1) Auto-escalation (dedup via the `escalated` flag).
+  // 1) Otomatik yükseltme (`escalated` bayrağı ile tekrarı önle).
   const open = await prisma.ticket.findMany({
     where: { status: { in: ['open', 'in_progress'] }, escalated: false },
     select: { id: true, subject: true, priority: true, createdAt: true, departmentId: true },
@@ -85,7 +85,7 @@ export async function runSlaSweep(): Promise<{ escalated: number; reminded: numb
     escalated += 1;
   }
 
-  // 2) Stale-ticket reminders (old + still open; deduped to once/day via reminderSentAt).
+  // 2) Bayat talep hatırlatmaları (eski + hâlâ açık; reminderSentAt ile günde bir kez olacak şekilde tekrarı önlenir).
   const staleBefore = new Date(now - env.STALE_TICKET_DAYS * 24 * 60 * MIN);
   const remindAgainBefore = new Date(now - 24 * 60 * MIN);
   const stale = await prisma.ticket.findMany({

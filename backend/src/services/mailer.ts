@@ -1,8 +1,8 @@
 import nodemailer from 'nodemailer';
 import { env } from '../env';
 
-// Real SMTP provider (e.g. Gmail). Set SMTP_USER/SMTP_PASS (port 587 + secure=false,
-// or 465 + secure=true). Connection pooling keeps throughput steady under load.
+// Gerçek SMTP sağlayıcısı (ör. Gmail). SMTP_USER/SMTP_PASS ayarlayın (port 587 + secure=false,
+// ya da 465 + secure=true). Bağlantı havuzu (pool) yük altında verimi sabit tutar.
 const transporter = nodemailer.createTransport({
   host: env.SMTP_HOST,
   port: env.SMTP_PORT,
@@ -17,10 +17,10 @@ const transporter = nodemailer.createTransport({
   tls: { rejectUnauthorized: false },
 });
 
-// RFC 2606 / 6761 reserved + non-routable TLDs: never deliverable over real SMTP.
+// RFC 2606 / 6761 rezerve + yönlendirilemeyen TLD'ler: gerçek SMTP üzerinden asla teslim edilemez.
 const NON_DELIVERABLE_DOMAIN = /\.(local|localhost|test|invalid|example|internal)$/i;
 
-// True if the address could plausibly receive real email (skip fake/demo addresses).
+// Adres gerçek e-posta alabilecek görünüyorsa true döner (sahte/demo adresleri atlar).
 export function isDeliverable(to: string): boolean {
   const at = to.lastIndexOf('@');
   if (at < 1) return false;
@@ -50,7 +50,7 @@ async function send(to: string, subject: string, html: string, attachments?: Mai
     await transporter.sendMail({ from: env.MAIL_FROM, to, subject, html, attachments });
     console.log(`📧 Email sent to ${to}: ${subject}`);
   } catch (err) {
-    // Never let an email failure break the request flow.
+    // Bir e-posta hatasının istek akışını bozmasına asla izin verme.
     console.error(`⚠️  Failed to send email to ${to}:`, err instanceof Error ? err.message : err);
   }
 }

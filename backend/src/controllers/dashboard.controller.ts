@@ -11,7 +11,7 @@ const ticketInclude = {
   _count: { select: { replies: true, attachments: true } },
 };
 
-// GET /dashboard — staff "start of day" overview within their scope.
+// GET /dashboard — staff için kendi kapsamı içindeki "güne başlangıç" özeti.
 export async function getDashboard(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const scopeWhere = await buildTicketScope(user);

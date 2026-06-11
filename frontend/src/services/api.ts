@@ -18,7 +18,7 @@ export function setStoredToken(token: string | null): void {
   else localStorage.removeItem(TOKEN_KEY);
 }
 
-// Attach the JWT to every request when present.
+// JWT mevcutsa her isteğe ekle.
 api.interceptors.request.use((config) => {
   const token = getStoredToken();
   if (token) {
@@ -27,7 +27,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// On 401, clear the session so guards redirect to login.
+// 401 durumunda oturumu temizle ki guard'lar login'e yönlendirsin.
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
@@ -42,7 +42,7 @@ api.interceptors.response.use(
   },
 );
 
-// Extracts a human-readable message from an API error.
+// API hatasından okunabilir bir mesaj çıkarır.
 export function extractErrorMessage(error: unknown, fallback = 'Bir hata oluştu'): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as { error?: string; details?: Record<string, string[]> } | undefined;

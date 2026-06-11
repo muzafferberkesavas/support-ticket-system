@@ -69,7 +69,7 @@ export async function login(req: Request, res: Response): Promise<void> {
   res.json({ token, user: toPublicUser(user) });
 }
 
-// GET /auth/me  — current authenticated user
+// GET /auth/me  — şu anki kimliği doğrulanmış kullanıcı
 export async function me(req: Request, res: Response): Promise<void> {
   const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
   if (!user) {
@@ -78,14 +78,14 @@ export async function me(req: Request, res: Response): Promise<void> {
   res.json({ user: toPublicUser(user) });
 }
 
-// PATCH /auth/profile  — update own display name
+// PATCH /auth/profile  — kendi görünen adını güncelle
 export async function updateProfile(req: Request, res: Response): Promise<void> {
   const { fullName } = updateProfileSchema.parse(req.body);
   const user = await prisma.user.update({ where: { id: req.user!.id }, data: { fullName } });
   res.json({ user: toPublicUser(user) });
 }
 
-// POST /auth/change-password  — authenticated (also used for forced first-login change)
+// POST /auth/change-password  — kimlik doğrulamalı (ilk girişte zorunlu değişiklik için de kullanılır)
 export async function changePassword(req: Request, res: Response): Promise<void> {
   const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
   const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
@@ -102,7 +102,7 @@ export async function changePassword(req: Request, res: Response): Promise<void>
   res.json({ ok: true });
 }
 
-// POST /auth/forgot-password  — always responds ok (no account enumeration)
+// POST /auth/forgot-password  — her zaman ok döner (hesap sızdırmayı önlemek için)
 export async function forgotPassword(req: Request, res: Response): Promise<void> {
   const { email } = forgotPasswordSchema.parse(req.body);
   const user = await prisma.user.findUnique({ where: { email } });
@@ -110,7 +110,7 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
   if (user) {
     const raw = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(raw).digest('hex');
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 saat
     await prisma.passwordResetToken.create({ data: { userId: user.id, tokenHash, expiresAt } });
     const link = `${env.APP_URL}/reset-password?token=${raw}`;
     await sendResetEmail(user.email, link);

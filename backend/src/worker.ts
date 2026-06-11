@@ -28,7 +28,7 @@ import { buildExportData, buildCsv } from './services/exportData';
 import { generateFile, FILE_META, type FileFormat } from './services/fileService';
 import { env } from './env';
 
-// ── Daily digest: per-staff summary of open / overdue / unassigned work ──
+// ── Günlük özet: her personel için açık / gecikmiş / atanmamış işlerin özeti ──
 interface Digest {
   to: string;
   name: string | null;
@@ -70,7 +70,7 @@ async function computeDigests(): Promise<Digest[]> {
   return digests;
 }
 
-// ── Job processors ───────────────────────────────────────────────────
+// ── Job işleyicileri ─────────────────────────────────────────────────
 mailQueue.process(JOB_REPLY_EMAIL, async (job) => {
   const d = job.data as ReplyEmailJob;
   await sendReplyEmail(d.to, d.ticketId, d.ticketSubject, d.replyMessage, d.authorName);
@@ -97,7 +97,7 @@ mailQueue.process(JOB_CSAT_REQUEST, async (job) => {
     where: { id: ticketId },
     select: { id: true, subject: true, status: true, csatRating: true, user: { select: { email: true } } },
   });
-  // Only ask if still closed and not already rated (skip if reopened/rated).
+  // Yalnızca hâlâ kapalıysa ve henüz puanlanmamışsa sor (yeniden açıldıysa/puanlandıysa atla).
   if (!t || t.status !== 'closed' || t.csatRating != null) return { skipped: true };
   await sendCsatEmail(t.user.email, t.id, t.subject);
   return { sent: t.user.email };
@@ -136,7 +136,7 @@ mailQueue.on('failed', (job, err) => {
   console.error(`❌ Job ${job.name}#${job.id} failed:`, err.message);
 });
 
-// ── Bull Board (queue monitoring dashboard) ──────────────────────────
+// ── Bull Board (queue izleme panosu) ─────────────────────────────────
 function basicAuth(req: Request, res: Response, next: NextFunction): void {
   const [scheme, encoded] = (req.headers.authorization || '').split(' ');
   if (scheme === 'Basic' && encoded) {

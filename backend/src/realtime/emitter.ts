@@ -2,9 +2,9 @@ import { Emitter } from '@socket.io/redis-emitter';
 import { Redis } from 'ioredis';
 import { env } from '../env';
 
-// Lets a non-Socket.IO process (the worker) push events to connected clients
-// through the same Redis the backend's Socket.IO adapter uses. This is how the
-// worker delivers live updates (escalations, notifications) without an HTTP call.
+// Socket.IO olmayan bir process'in (worker) bağlı istemcilere, backend'in Socket.IO
+// adapter'ının kullandığı aynı Redis üzerinden event göndermesini sağlar. Worker, canlı
+// güncellemeleri (escalation'lar, bildirimler) bir HTTP çağrısı olmadan böyle iletir.
 let emitter: Emitter | null = null;
 
 function getEmitter(): Emitter {

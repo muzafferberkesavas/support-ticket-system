@@ -1,7 +1,7 @@
 import { prisma } from '../prisma';
 
-// Picks the least-loaded staff member of a department (fewest active assigned
-// tickets). Returns null if the department has no members or auto-assign is off.
+// Bir departmanın en az yüklü personelini seçer (en az aktif atanmış talebi olan).
+// Departmanın üyesi yoksa ya da otomatik atama kapalıysa null döner.
 export async function pickLeastLoadedAgent(departmentId: string): Promise<string | null> {
   const dept = await prisma.department.findUnique({
     where: { id: departmentId },
@@ -11,7 +11,7 @@ export async function pickLeastLoadedAgent(departmentId: string): Promise<string
 
   const memberIds = dept.members.map((m) => m.userId);
 
-  // Active (open / in_progress) assignment counts per member.
+  // Üye başına aktif (open / in_progress) atama sayıları.
   const loads = await prisma.ticketAssignee.groupBy({
     by: ['userId'],
     where: { userId: { in: memberIds }, ticket: { status: { in: ['open', 'in_progress'] } } },

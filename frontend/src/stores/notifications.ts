@@ -17,7 +17,7 @@ export const useNotificationStore = defineStore('notifications', {
       this.loaded = true;
     },
 
-    // Called when a live 'notification' event arrives.
+    // Canlı bir 'notification' olayı geldiğinde çağrılır.
     prepend(n: AppNotification) {
       this.items = [n, ...this.items].slice(0, 50);
       if (!n.read) this.unreadCount += 1;
@@ -31,7 +31,7 @@ export const useNotificationStore = defineStore('notifications', {
       try {
         await notificationService.markRead(id);
       } catch {
-        /* keep optimistic state */
+        /* iyimser (optimistic) durumu koru */
       }
     },
 
@@ -41,7 +41,7 @@ export const useNotificationStore = defineStore('notifications', {
       try {
         await notificationService.markAllRead();
       } catch {
-        /* ignore */
+        /* yoksay */
       }
     },
 

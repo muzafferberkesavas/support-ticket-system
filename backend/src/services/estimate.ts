@@ -14,8 +14,8 @@ export interface Estimate {
   basedOnHistory: boolean;
 }
 
-// Estimates response/resolution time for a new ticket from historical averages
-// (same priority, optionally same department), falling back to SLA targets.
+// Yeni bir talep için yanıt/çözüm süresini geçmiş ortalamalardan tahmin eder
+// (aynı öncelik, isteğe bağlı aynı departman); yoksa SLA hedeflerine geri düşer.
 export async function estimateForTicket(priority: string, departmentId?: string | null): Promise<Estimate> {
   const slaTargets = getSlaTargets();
   const sla = slaTargets[priority] ?? slaTargets.medium;

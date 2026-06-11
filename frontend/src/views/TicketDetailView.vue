@@ -201,12 +201,12 @@ function escalate() {
   });
 }
 
-// Canned responses → insert into reply box
+// Hazır yanıtlar → yanıt kutusuna ekle
 function insertCanned(body: string) {
   replyText.value = replyText.value.trim() ? `${replyText.value}\n\n${body}` : body;
 }
 
-// CSAT
+// CSAT (müşteri memnuniyeti)
 const csatRating = ref(0);
 const csatComment = ref('');
 const submittingCsat = ref(false);
@@ -227,7 +227,7 @@ async function submitCsat() {
   }
 }
 
-// Attachments
+// Ekler
 const detailFileInput = ref<HTMLInputElement | null>(null);
 const uploadingFiles = ref(false);
 function pickDetailFiles() {
@@ -272,7 +272,7 @@ const ACTIVITY_ICON: Record<string, string> = {
 const activityLabel = (a: AuditEntry) => t(`activityActions.${a.action}`);
 const activityIcon = (a: AuditEntry) => ACTIVITY_ICON[a.action] ?? 'pi pi-circle';
 
-// ── Real-time ───────────────────────────────────────────────────────
+// ── Gerçek zamanlı (real-time) ──────────────────────────────────────
 const typists = computed(() => realtime.typistsFor(ticketId.value).filter((u) => u.id !== auth.user?.id));
 const viewers = computed(() => realtime.viewersFor(ticketId.value).filter((u) => u.id !== auth.user?.id));
 const typingText = computed(() => {
@@ -332,7 +332,7 @@ onUnmounted(() => {
     style="margin-bottom: 1rem"
   />
 
-  <!-- Skeleton -->
+  <!-- İskelet (skeleton) -->
   <div v-if="loading" class="detail-grid">
     <div>
       <Card
@@ -356,9 +356,9 @@ onUnmounted(() => {
   <Message v-else-if="loadError" severity="error" :closable="false">{{ loadError }}</Message>
 
   <div v-else-if="ticket" class="detail-grid">
-    <!-- Left: ticket + conversation -->
+    <!-- Sol: talep + yazışma -->
     <div>
-      <!-- Estimate banner for the requester while open -->
+      <!-- Talep açıkken talebi açan kişiye gösterilen tahmin afişi -->
       <div v-if="estimate && isRequester" class="estimate-banner">
         <i class="pi pi-clock" />
         <div>
@@ -390,7 +390,7 @@ onUnmounted(() => {
         </template>
       </Card>
 
-      <!-- CSAT (requester rates a closed ticket) -->
+      <!-- CSAT (talebi açan kişi, kapanmış talebi puanlar) -->
       <Card v-if="ticket.status === 'closed' && isRequester" class="csat-card">
         <template #content>
           <div v-if="ticket.csatRating" class="csat-done">
@@ -424,7 +424,7 @@ onUnmounted(() => {
         </template>
       </Card>
 
-      <!-- Attachments -->
+      <!-- Ekler -->
       <div class="att-section">
         <div class="att-section-head">
           <h3 class="section-title" style="margin: 0">
@@ -558,7 +558,7 @@ onUnmounted(() => {
       </Card>
     </div>
 
-    <!-- Right: meta + actions -->
+    <!-- Sağ: üst bilgi (meta) + işlemler -->
     <div class="detail-side">
       <Card>
         <template #title>{{ t('tickets.detail.information') }}</template>
@@ -645,7 +645,7 @@ onUnmounted(() => {
         </template>
       </Card>
 
-      <!-- Activity timeline -->
+      <!-- Etkinlik zaman çizelgesi -->
       <Card v-if="activity.length" style="margin-top: 1rem">
         <template #title>{{ t('tickets.detail.activity') }}</template>
         <template #content>
@@ -663,7 +663,7 @@ onUnmounted(() => {
         </template>
       </Card>
 
-      <!-- Staff controls -->
+      <!-- Personel kontrolleri -->
       <Card v-if="auth.isStaff" style="margin-top: 1rem">
         <template #title>{{ t('tickets.detail.assignManage') }}</template>
         <template #content>

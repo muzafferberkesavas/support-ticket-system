@@ -42,7 +42,7 @@ const editing = ref<User | null>(null);
 const submitting = ref(false);
 const form = reactive({ fullName: '', role: 'user' as Role, departmentIds: [] as string[] });
 
-// Create user
+// Kullanıcı oluştur
 const createVisible = ref(false);
 const creating = ref(false);
 const createForm = reactive({ email: '', fullName: '', role: 'agent' as Role, departmentIds: [] as string[] });
@@ -298,7 +298,7 @@ onMounted(load);
     </template>
   </Dialog>
 
-  <!-- Create user -->
+  <!-- Kullanıcı oluştur -->
   <Dialog
     v-model:visible="createVisible"
     :header="t('users.createTitle')"
@@ -356,7 +356,7 @@ onMounted(load);
     </template>
   </Dialog>
 
-  <!-- Temp password result -->
+  <!-- Geçici şifre sonucu -->
   <Dialog
     v-model:visible="tempPasswordVisible"
     :header="t('users.tempPasswordTitle')"

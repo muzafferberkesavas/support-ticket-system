@@ -1,8 +1,8 @@
 import Queue from 'bull';
 import { env } from './env';
 
-// A single Bull queue shared between the backend (producer) and the worker
-// (consumer) over Redis. Named jobs keep different work types in one queue.
+// Backend (producer) ile worker (consumer) arasında Redis üzerinden paylaşılan
+// tek bir Bull queue. İsimlendirilmiş job'lar farklı iş türlerini tek queue'da tutar.
 export interface ReplyEmailJob {
   to: string;
   ticketId: string;
@@ -28,7 +28,7 @@ export const JOB_CSAT_REQUEST = 'csat-request';
 export const JOB_EXPORT = 'export-tickets';
 
 export const mailQueue = new Queue('mail', env.REDIS_URL, {
-  // Rate limit to stay well under provider sending limits (Gmail ~500/day).
+  // Sağlayıcı gönderim limitlerinin (Gmail ~500/gün) altında kalmak için rate limit.
   limiter: { max: 30, duration: 60_000 },
   defaultJobOptions: {
     attempts: 3,
@@ -38,7 +38,7 @@ export const mailQueue = new Queue('mail', env.REDIS_URL, {
   },
 });
 
-// ── Producers (called from the backend) ──────────────────────────────
+// ── Producer'lar (backend'den çağrılır) ──────────────────────────────
 export function enqueueReplyEmail(data: ReplyEmailJob) {
   return mailQueue.add(JOB_REPLY_EMAIL, data);
 }
@@ -47,19 +47,19 @@ export function enqueueDigestNow() {
   return mailQueue.add(JOB_DAILY_DIGEST, { manual: true });
 }
 
-// Delayed job: CSAT survey email is sent CSAT_DELAY_MS after a ticket closes.
+// Gecikmeli job: CSAT anketi e-postası, talep kapandıktan CSAT_DELAY_MS sonra gönderilir.
 export function enqueueCsatRequest(ticketId: string) {
   return mailQueue.add(JOB_CSAT_REQUEST, { ticketId }, { delay: env.CSAT_DELAY_MS });
 }
 
-// Heavy work offloaded from the request: build a CSV export and email it.
+// İstekten ayrılan ağır iş: CSV dışa aktarımı oluşturup e-posta ile gönder.
 export function enqueueExport(data: ExportJob) {
   return mailQueue.add(JOB_EXPORT, data);
 }
 
-// Registers the repeatable cron jobs (called by the worker on boot).
+// Tekrarlanan cron job'larını kaydeder (worker açılışta çağırır).
 export async function scheduleRepeatables(): Promise<void> {
-  // Clear prior repeatables so changed cron expressions take effect.
+  // Değişen cron ifadelerinin etkili olması için önceki tekrarlananları temizle.
   const existing = await mailQueue.getRepeatableJobs();
   await Promise.all(existing.map((r) => mailQueue.removeRepeatableByKey(r.key)));
   await mailQueue.add(JOB_DAILY_DIGEST, {}, { repeat: { cron: env.DIGEST_CRON } });

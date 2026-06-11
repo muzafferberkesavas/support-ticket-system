@@ -5,14 +5,14 @@ export interface SlaTarget {
   resolution: number;
 }
 
-// Built-in defaults (minutes). Overridable from the database (admin-editable).
+// Yerleşik varsayılanlar (dakika). Veritabanından geçersiz kılınabilir (admin düzenleyebilir).
 export const DEFAULT_SLA_TARGETS: Record<string, SlaTarget> = {
   high: { response: 60, resolution: 240 }, // 1h / 4h
   medium: { response: 240, resolution: 1440 }, // 4h / 24h
   low: { response: 480, resolution: 4320 }, // 8h / 72h
 };
 
-// In-memory active config (sync access for computeSla); refreshed from DB.
+// Bellek içi aktif yapılandırma (computeSla için senkron erişim); DB'den tazelenir.
 let activeTargets: Record<string, SlaTarget> = { ...DEFAULT_SLA_TARGETS };
 
 export function getSlaTargets(): Record<string, SlaTarget> {
@@ -23,7 +23,7 @@ export function setSlaTargets(targets: Record<string, SlaTarget>): void {
   activeTargets = targets;
 }
 
-// Loads SLA policies from the database into the in-memory cache.
+// SLA politikalarını veritabanından bellek içi önbelleğe yükler.
 export async function refreshSlaTargets(): Promise<void> {
   try {
     const rows = await prisma.slaPolicy.findMany();
@@ -59,7 +59,7 @@ interface SlaTicket {
   resolvedAt: Date | null;
 }
 
-// Computes SLA / aging status for a ticket (derived on read, not stored).
+// Bir talep için SLA / yaşlanma durumunu hesaplar (saklanmaz, okuma anında türetilir).
 export function computeSla(t: SlaTicket, now = new Date()): SlaInfo {
   const targets = getSlaTargets();
   const target = targets[t.priority] ?? targets.medium ?? DEFAULT_SLA_TARGETS.medium;

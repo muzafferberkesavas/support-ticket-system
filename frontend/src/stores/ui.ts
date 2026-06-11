@@ -11,7 +11,7 @@ function storedTheme(): Theme {
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-// Applies the dark class on <html> (reliable target per PrimeVue docs).
+// Koyu tema sınıfını <html> üzerine uygular (PrimeVue dokümanlarına göre güvenilir hedef).
 function applyTheme(theme: Theme): void {
   document.documentElement.classList.toggle(DARK_CLASS, theme === 'dark');
 }

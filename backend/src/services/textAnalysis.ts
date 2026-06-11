@@ -1,9 +1,9 @@
-// Lightweight, dependency-free recurring-problem analysis over ticket text.
-// Extracts frequent keywords/bigrams (TR + EN), groups by theme, and classifies
-// each theme so the frontend can render a localized recommendation.
+// Talep metni üzerinde hafif, bağımlılıksız tekrar eden problem analizi.
+// Sık geçen anahtar kelimeleri/bigram'ları (TR + EN) çıkarır, temaya göre gruplar ve
+// her temayı sınıflandırır; böylece frontend yerelleştirilmiş bir öneri gösterebilir.
 
 const STOPWORDS = new Set<string>([
-  // Turkish function/common words
+  // Türkçe işlev/yaygın kelimeler
   've',
   'veya',
   'ile',
@@ -85,7 +85,7 @@ const STOPWORDS = new Set<string>([
   'sürekli',
   'falan',
   'filan',
-  // generic verbs/adjectives that add noise (keep the noun behind the problem)
+  // gürültü ekleyen genel fiil/sıfatlar (problemin ardındaki ismi koru)
   'yeni',
   'eski',
   'istiyorum',
@@ -127,7 +127,7 @@ const STOPWORDS = new Set<string>([
   'benim',
   'ofis',
   'office',
-  // stemmed/inflected noise that slips through
+  // araya sızan kök/çekimli gürültü
   'uzak',
   'uzaktan',
   'takılıyor',
@@ -137,7 +137,7 @@ const STOPWORDS = new Set<string>([
   'tuş',
   'tutarı',
   'tutar',
-  // English
+  // İngilizce
   'the',
   'and',
   'for',
@@ -181,7 +181,7 @@ const STOPWORDS = new Set<string>([
   'want',
 ]);
 
-// Nouns that hint at procurement / stock.
+// Tedarik / stok ihtiyacına işaret eden isimler.
 const HARDWARE = new Set<string>([
   'mouse',
   'fare',
@@ -220,7 +220,7 @@ const HARDWARE = new Set<string>([
   'ram',
 ]);
 
-// Verbs/adjectives signalling a failure (used for classification, excluded as keywords).
+// Arızaya işaret eden fiil/sıfatlar (sınıflandırmada kullanılır, anahtar kelime olarak dışlanır).
 const FAILURE = new Set<string>([
   'çalışmıyor',
   'açılmıyor',
@@ -264,7 +264,7 @@ export interface Theme {
   kind: ThemeKind;
 }
 
-// Conservative Turkish suffix stripping to merge inflected forms (yazıcısı → yazıcı).
+// Çekimli biçimleri birleştirmek için ihtiyatlı Türkçe ek ayıklama (yazıcısı → yazıcı).
 const SUFFIXES = [
   'larını',
   'lerini',
@@ -321,7 +321,7 @@ export function analyzeThemes(items: ThemeInput[], limit = 8): Theme[] {
 
   items.forEach((it, idx) => {
     const toks = tokenize(`${it.subject} ${it.message} ${it.category ?? ''}`);
-    // Keep the nouns behind a problem: drop stopwords AND failure verbs.
+    // Problemin ardındaki isimleri koru: stopword'leri VE arıza fiillerini at.
     const meaningful = toks.filter(
       (tk) => tk.length >= 3 && !STOPWORDS.has(tk) && !FAILURE.has(tk) && !/^\d+$/.test(tk),
     );
@@ -348,8 +348,8 @@ export function analyzeThemes(items: ThemeInput[], limit = 8): Theme[] {
     const display = isBigram ? s.term.slice(3) : s.term;
     const words = display.split(' ');
 
-    // Skip a theme if any of its words is already covered by a chosen theme
-    // (collapses "mouse" + "mouse talebi" into one).
+    // Bir temanın kelimelerinden herhangi biri zaten seçilmiş bir temada varsa onu atla
+    // ("mouse" + "mouse talebi" ifadelerini tek temada birleştirir).
     if (words.some((w) => usedWords.has(w))) continue;
 
     const idxs = [...s.indices];

@@ -26,7 +26,7 @@ function publicAttachment(a: {
   };
 }
 
-// POST /tickets/:id/attachments — upload one or more files to a ticket.
+// POST /tickets/:id/attachments — bir talebe bir veya daha fazla dosya yükle.
 export async function uploadAttachments(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const ticket = await prisma.ticket.findUnique({
@@ -43,7 +43,7 @@ export async function uploadAttachments(req: Request, res: Response): Promise<vo
 
   const created = [];
   for (const f of files) {
-    // multer decodes filenames as latin1; restore UTF-8 for non-ASCII names.
+    // multer dosya adlarını latin1 olarak çözer; ASCII olmayan adlar için UTF-8'i geri yükle.
     const original = Buffer.from(f.originalname, 'latin1').toString('utf8');
     const a = await prisma.attachment.create({
       data: {
@@ -68,7 +68,7 @@ export async function uploadAttachments(req: Request, res: Response): Promise<vo
   res.status(201).json({ attachments: created });
 }
 
-// GET /attachments/:id — stream the file (access-checked via its ticket).
+// GET /attachments/:id — dosyayı akıt (erişim, ait olduğu talep üzerinden kontrol edilir).
 export async function downloadAttachment(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const a = await prisma.attachment.findUnique({
@@ -89,7 +89,7 @@ export async function downloadAttachment(req: Request, res: Response): Promise<v
   fs.createReadStream(filePath).pipe(res);
 }
 
-// DELETE /attachments/:id — uploader or admin.
+// DELETE /attachments/:id — yükleyen kişi veya admin.
 export async function deleteAttachment(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const a = await prisma.attachment.findUnique({ where: { id: req.params.id } });

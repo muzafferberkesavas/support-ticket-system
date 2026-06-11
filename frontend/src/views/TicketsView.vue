@@ -59,7 +59,7 @@ const scope = ref<'all' | 'mine' | 'unassigned'>('all');
 const searchText = ref('');
 const availableTags = ref<string[]>([]);
 
-// Bulk selection
+// Toplu seçim
 const selectedTickets = ref<Ticket[]>([]);
 const bulkBusy = ref(false);
 const bulkStatusPick = ref<string | null>(null);
@@ -106,7 +106,7 @@ async function load() {
       scope: auth.isStaff && scope.value !== 'all' ? scope.value : undefined,
       search: searchText.value.trim() || undefined,
     });
-    // Attach numeric ranks for severity/workflow-ordered sorting.
+    // Önem/iş akışı sırasına göre sıralama için sayısal sıra değerlerini ekle.
     tickets.value = list.map((tk) => ({
       ...tk,
       priorityRank: PRIORITY_RANK[tk.priority],
@@ -131,7 +131,7 @@ async function loadTags() {
   availableTags.value = await ticketService.tags().catch(() => []);
 }
 
-// Offload a (potentially large) export to the worker; it builds the CSV and emails it.
+// (Olası büyük) dışa aktarmayı worker'a devret; CSV'yi oluşturup e-posta ile gönderir.
 const emailExporting = ref(false);
 async function emailExport() {
   emailExporting.value = true;
@@ -171,7 +171,7 @@ const hasActiveFilters = computed(
     searchText.value.trim(),
 );
 
-// ── Bulk actions ────────────────────────────────────────────────────
+// ── Toplu işlemler ──────────────────────────────────────────────────
 const tagOptions = computed(() => availableTags.value.map((t) => ({ label: t, value: t })));
 
 async function bulkStatus(status: 'open' | 'in_progress' | 'closed') {
@@ -216,7 +216,7 @@ function bulkDelete() {
   });
 }
 
-// Debounced search.
+// Debounce uygulanmış arama.
 let searchTimer: number | undefined;
 watch(searchText, () => {
   clearTimeout(searchTimer);
@@ -283,7 +283,7 @@ function exportTickets() {
   downloadCsv(`talepler-${new Date().toISOString().slice(0, 10)}.csv`, rows);
 }
 
-// Live refresh: reload (debounced) whenever a ticket changes anywhere.
+// Canlı yenileme: herhangi bir yerde bir talep değiştiğinde (debounce ile) yeniden yükle.
 let reloadTimer: number | undefined;
 function scheduleReload() {
   clearTimeout(reloadTimer);
@@ -334,7 +334,7 @@ onUnmounted(() => {
     </div>
   </div>
 
-  <!-- Stats -->
+  <!-- İstatistikler -->
   <div class="stat-grid">
     <div class="stat-card">
       <div class="stat-top">
@@ -382,7 +382,7 @@ onUnmounted(() => {
     </div>
   </div>
 
-  <!-- Filters -->
+  <!-- Filtreler -->
   <div class="toolbar-filters" style="margin-bottom: 1rem">
     <IconField>
       <InputIcon class="pi pi-search" />
@@ -451,7 +451,7 @@ onUnmounted(() => {
 
   <Message v-if="loadError" severity="error" :closable="false" style="margin-bottom: 1rem">{{ loadError }}</Message>
 
-  <!-- Bulk action bar (staff) -->
+  <!-- Toplu işlem çubuğu (personel) -->
   <div v-if="auth.isStaff && selectedTickets.length" class="bulk-bar">
     <span class="bulk-count">{{ t('bulk.selected', { n: selectedTickets.length }) }}</span>
     <Select
@@ -483,7 +483,7 @@ onUnmounted(() => {
     <Button :label="t('bulk.clear')" text size="small" severity="secondary" @click="selectedTickets = []" />
   </div>
 
-  <!-- Skeleton while loading -->
+  <!-- Yüklenirken iskelet (skeleton) -->
   <div v-if="loading" class="skeleton-table">
     <div v-for="i in 6" :key="i" class="skeleton-row">
       <Skeleton width="40%" height="1.1rem" />

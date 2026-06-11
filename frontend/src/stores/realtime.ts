@@ -15,7 +15,7 @@ export const useRealtimeStore = defineStore('realtime', {
   }),
 
   getters: {
-    // Active typists for a ticket (excludes expired entries).
+    // Bir talep için aktif yazanlar (süresi dolan kayıtlar hariç).
     typistsFor:
       (state) =>
       (ticketId: string): PublicUser[] => {
@@ -29,7 +29,7 @@ export const useRealtimeStore = defineStore('realtime', {
   },
 
   actions: {
-    // Register socket listeners once.
+    // socket dinleyicilerini bir kez kaydet.
     bind() {
       if (this.bound) return;
       this.bound = true;

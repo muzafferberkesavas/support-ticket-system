@@ -7,7 +7,7 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import RealtimeBridge from '@/components/RealtimeBridge.vue';
 
 const route = useRoute();
-// Auth pages + forced password change render full-screen without the app chrome.
+// Auth sayfaları + zorunlu şifre değişimi, uygulama çerçevesi olmadan tam ekran gösterilir.
 const isBareLayout = computed(() => route.meta.guestOnly === true || route.meta.fullScreen === true);
 </script>
 

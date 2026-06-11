@@ -26,12 +26,12 @@ export const resetPasswordSchema = z.object({
   newPassword: z.string().min(6, 'New password must be at least 6 characters'),
 });
 
-// ── Enums ───────────────────────────────────────────────────────────
+// ── Enum'lar ────────────────────────────────────────────────────────
 export const roleEnum = z.enum(['user', 'agent', 'team_lead', 'admin']);
 export const priorityEnum = z.enum(['low', 'medium', 'high']);
 export const statusEnum = z.enum(['open', 'in_progress', 'closed']);
 
-// ── Tickets ─────────────────────────────────────────────────────────
+// ── Talepler ────────────────────────────────────────────────────────
 const tagsSchema = z.array(z.string().trim().min(1).max(30)).max(15);
 
 export const createTicketSchema = z.object({
@@ -130,7 +130,7 @@ export const assignTicketSchema = z.object({
   assigneeIds: z.array(z.string().uuid()).max(20),
 });
 
-// ── Departments ─────────────────────────────────────────────────────
+// ── Departmanlar ────────────────────────────────────────────────────
 export const createDepartmentSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters').max(80),
   description: z.string().trim().max(300).optional().nullable(),
@@ -147,7 +147,7 @@ export const updateDepartmentSchema = z
     message: 'At least one field must be provided',
   });
 
-// ── User management (admin) ─────────────────────────────────────────
+// ── Kullanıcı yönetimi (admin) ──────────────────────────────────────
 export const createUserSchema = z.object({
   email: z.string().email('A valid email is required'),
   fullName: z.string().trim().min(2).max(120).optional(),

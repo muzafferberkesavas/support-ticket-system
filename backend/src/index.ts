@@ -8,18 +8,19 @@ import { refreshSlaTargets } from './services/sla';
 const app = createApp();
 const server = http.createServer(app);
 
-// Attach Socket.IO (real-time) to the same HTTP server.
+// Socket.IO'yu (gerçek zamanlı) aynı HTTP server'a bağla.
 initRealtime(server).catch((err) => console.error('Realtime init failed:', err));
 
-// Load admin-configurable SLA targets. (SLA auto-escalation now runs in the
-// independent worker as a Bull cron job — see backend/src/worker.ts.)
+// Admin tarafından ayarlanabilir SLA hedeflerini yükle. (SLA otomatik
+// yükseltmesi artık bağımsız worker'da bir Bull cron job olarak çalışır —
+// bkz. backend/src/worker.ts.)
 void refreshSlaTargets();
 
 server.listen(env.PORT, () => {
   console.log(`🚀 Backend listening on http://localhost:${env.PORT}`);
 });
 
-// Graceful shutdown
+// Düzgün (graceful) kapanış
 async function shutdown(signal: string) {
   console.log(`\n${signal} received — shutting down...`);
   server.close(async () => {

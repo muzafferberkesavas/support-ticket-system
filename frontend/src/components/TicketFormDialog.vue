@@ -70,7 +70,7 @@ const priorityOptions = computed(() => PRIORITY_VALUES.map((v) => ({ label: t(`p
 const statusOptions = computed(() => STATUS_VALUES.map((v) => ({ label: t(`status.${v}`), value: v })));
 const departmentOptions = computed(() => departments.value.map((d) => ({ label: d.name, value: d.id })));
 
-// Assignable people = members of the selected department.
+// Atanabilecek kişiler = seçili departmanın üyeleri.
 const assigneeOptions = computed(() => {
   const dept = departments.value.find((d) => d.id === form.departmentId);
   if (!dept?.members) return [];
@@ -107,7 +107,7 @@ watch(
   },
 );
 
-// Drop assignees that no longer belong to the chosen department.
+// Seçilen departmana artık ait olmayan atanan kişileri çıkar.
 watch(
   () => form.departmentId,
   () => {
@@ -116,7 +116,7 @@ watch(
   },
 );
 
-// Estimated response/resolution time (debounced) for the chosen priority/department.
+// Seçilen öncelik/departman için tahmini yanıt/çözüm süresi (debounce uygulanmış).
 watch([() => form.priority, () => form.departmentId, () => props.visible], () => {
   if (!props.visible) {
     estimate.value = null;

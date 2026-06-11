@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { AppError } from '../utils/AppError';
 
-// GET /notifications — current user's latest notifications + unread count.
+// GET /notifications — mevcut kullanıcının en son bildirimleri + okunmamış sayısı.
 export async function listNotifications(req: Request, res: Response): Promise<void> {
   const userId = req.user!.id;
   const [notifications, unreadCount] = await Promise.all([

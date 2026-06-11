@@ -8,8 +8,8 @@ export interface NotificationInput {
   actor?: string;
 }
 
-// Persists a notification per recipient and pushes it live to their personal room.
-// Fire-and-forget: failures are logged, never thrown into the request flow.
+// Her alıcı için bir bildirim kaydeder ve kişisel odasına canlı olarak gönderir.
+// Ateşle-unut: hatalar loglanır, asla istek akışına fırlatılmaz.
 export function notifyUsers(userIds: string[], input: NotificationInput, excludeUserId?: string): void {
   const targets = [...new Set(userIds)].filter((id) => id && id !== excludeUserId);
   if (!targets.length) return;

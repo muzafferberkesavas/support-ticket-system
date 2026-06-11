@@ -6,16 +6,16 @@ import type { Principal } from '../services/access';
 import { buildExportData } from '../services/exportData';
 import { generateFile, FILE_META, type FileFormat } from '../services/fileService';
 
-// POST /jobs/digest — enqueue the daily digest immediately (admin, for testing).
-// The backend only pushes the job to Redis; the worker picks it up and runs it.
+// POST /jobs/digest — günlük özeti hemen kuyruğa al (admin, test amaçlı).
+// Backend job'u yalnızca Redis'e iletir; worker onu alıp çalıştırır.
 export async function runDigest(_req: Request, res: Response): Promise<void> {
   const job = await enqueueDigestNow();
   res.json({ enqueued: true, jobId: String(job.id) });
 }
 
-// POST /jobs/export — offload an export to the worker; it builds the file
-// (CSV locally, or Excel/PDF via the file-service) and e-mails it. The request
-// returns immediately (no blocking on heavy work).
+// POST /jobs/export — bir dışa aktarımı worker'a devret; dosyayı oluşturur
+// (CSV yerel olarak, ya da file-service üzerinden Excel/PDF) ve e-posta ile gönderir.
+// İstek hemen döner (ağır iş üzerinde bloklama yok).
 export async function runExport(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const { format, ...filters } = exportFiltersSchema.parse(req.body ?? {});
@@ -31,10 +31,10 @@ export async function runExport(req: Request, res: Response): Promise<void> {
   res.json({ enqueued: true, jobId: String(job.id) });
 }
 
-// POST /jobs/export/download — synchronous download. The backend gathers the
-// data, asks the file-service to render it (Excel/PDF), and streams the file
-// straight back to the client. Demonstrates the backend → microservice → file
-// round-trip without going through e-mail.
+// POST /jobs/export/download — senkron indirme. Backend veriyi toplar,
+// file-service'ten onu işlemesini (Excel/PDF) ister ve dosyayı doğrudan
+// istemciye akıtır. E-postaya gitmeden backend → mikroservis → dosya
+// gidiş-dönüşünü gösterir.
 export async function downloadExport(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const { format, ...filters } = exportFiltersSchema.parse(req.body ?? {});

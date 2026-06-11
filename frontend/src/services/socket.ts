@@ -12,7 +12,7 @@ const SOCKET_PATH = `${parsed.pathname.replace(/\/$/, '')}/socket.io`;
 
 export const socketConnected = ref(false);
 
-// Single shared client. Token is read lazily so reconnects use the latest one.
+// Tek paylaşılan istemci. Token tembel (lazy) okunur; böylece yeniden bağlanmalar en günceli kullanır.
 export const socket: Socket = io(SOCKET_ORIGIN, {
   path: SOCKET_PATH,
   autoConnect: false,

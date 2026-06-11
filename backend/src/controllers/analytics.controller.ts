@@ -10,11 +10,11 @@ const minutesBetween = (a: Date, b: Date) => (b.getTime() - a.getTime()) / 60000
 const avg = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null);
 const pct = (met: number, total: number) => (total ? Math.round((met / total) * 100) : null);
 
-// GET /analytics — manager/admin dashboard. team_lead is scoped to their departments.
+// GET /analytics — manager/admin dashboard'u. team_lead kendi department'larıyla sınırlıdır.
 export async function getAnalytics(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
 
-  // Scope
+  // Kapsam
   let where: Prisma.TicketWhereInput = {};
   let scopeDeptIds: string[] | null = null;
   if (user.role !== 'admin') {
@@ -44,7 +44,7 @@ export async function getAnalytics(req: Request, res: Response): Promise<void> {
     },
   });
 
-  // ── Summary ────────────────────────────────────────────────────────
+  // ── Özet ───────────────────────────────────────────────────────────
   const byStatus = { open: 0, in_progress: 0, closed: 0 } as Record<string, number>;
   const byPriority = { low: 0, medium: 0, high: 0 } as Record<string, number>;
   const byDeptCount = new Map<string, number>();
@@ -83,7 +83,7 @@ export async function getAnalytics(req: Request, res: Response): Promise<void> {
     }
   }
 
-  // ── Tickets over time (last 30 days) ───────────────────────────────
+  // ── Zaman içinde ticket'lar (son 30 gün) ───────────────────────────
   const today = new Date();
   const start = new Date(today.getTime() - 29 * DAY_MS);
   start.setHours(0, 0, 0, 0);
@@ -98,7 +98,7 @@ export async function getAnalytics(req: Request, res: Response): Promise<void> {
   }
   const ticketsOverTime = [...buckets.entries()].map(([date, count]) => ({ date, count }));
 
-  // ── Department names ───────────────────────────────────────────────
+  // ── Department adları ──────────────────────────────────────────────
   const departments = await prisma.department.findMany({ select: { id: true, name: true } });
   const deptName = new Map(departments.map((d) => [d.id, d.name]));
   const byDepartment = [...byDeptCount.entries()].map(([id, count]) => ({
@@ -107,7 +107,7 @@ export async function getAnalytics(req: Request, res: Response): Promise<void> {
     count,
   }));
 
-  // ── Agent performance ──────────────────────────────────────────────
+  // ── Agent performansı ──────────────────────────────────────────────
   const staffWhere: Prisma.UserWhereInput = {
     role: { in: ['agent', 'team_lead', 'admin'] },
     ...(scopeDeptIds ? { memberships: { some: { departmentId: { in: scopeDeptIds } } } } : {}),
@@ -143,7 +143,7 @@ export async function getAnalytics(req: Request, res: Response): Promise<void> {
     })
     .sort((a, b) => b.resolved - a.resolved || b.assigned - a.assigned);
 
-  // ── Recurring problems (text analysis) ─────────────────────────────
+  // ── Tekrar eden problemler (metin analizi) ─────────────────────────
   const recurringProblems = analyzeThemes(
     tickets.map((t) => ({ subject: t.subject, message: t.message, category: t.category, userId: t.userId })),
     6,

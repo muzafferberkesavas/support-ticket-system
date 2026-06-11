@@ -3,7 +3,7 @@ import { prisma } from './prisma';
 import { env } from './env';
 import type { Priority, Status } from '@prisma/client';
 
-// Idempotent seed: admin + departments + sample staff + a little demo data.
+// Idempotent seed: admin + departmanlar + örnek personel + biraz demo verisi.
 async function main() {
   // ── Admin ──────────────────────────────────────────────────────────
   const adminHash = await bcrypt.hash(env.ADMIN_PASSWORD, 10);
@@ -14,7 +14,7 @@ async function main() {
   });
   console.log(`✅ Admin ready: ${admin.email}`);
 
-  // ── Departments ────────────────────────────────────────────────────
+  // ── Departmanlar ───────────────────────────────────────────────────
   const departmentSeed = [
     { name: 'Teknik Destek', description: 'Ürün ve teknik sorunlar' },
     { name: 'Faturalama', description: 'Ödeme, fatura ve abonelik' },
@@ -32,7 +32,7 @@ async function main() {
   }
   console.log(`✅ Departments ready: ${departmentSeed.map((d) => d.name).join(', ')}`);
 
-  // ── Sample staff ───────────────────────────────────────────────────
+  // ── Örnek personel ─────────────────────────────────────────────────
   const staffHash = await bcrypt.hash('Agent123!', 10);
   const staffSeed: {
     email: string;
@@ -62,12 +62,12 @@ async function main() {
   }
   console.log(`✅ Sample staff ready (password: Agent123!)`);
 
-  // ── Rich demo dataset (runs once; guarded by a marker user) ────────
+  // ── Zengin demo veri seti (bir kez çalışır; marker kullanıcıyla korunur) ────────
   await generateDemoData(departments);
   await seedExtras();
 }
 
-// Canned responses + demo CSAT ratings (idempotent-ish).
+// Hazır yanıtlar + demo CSAT puanları (yarı-idempotent).
 async function seedExtras() {
   if ((await prisma.cannedResponse.count()) === 0) {
     await prisma.cannedResponse.createMany({
@@ -93,7 +93,7 @@ async function seedExtras() {
     console.log('✅ Canned responses seeded');
   }
 
-  // Tag demo tickets by keyword (once).
+  // Demo talepleri anahtar kelimeye göre etiketle (bir kez).
   if ((await prisma.ticket.count({ where: { tags: { isEmpty: false } } })) === 0) {
     const all = await prisma.ticket.findMany({ select: { id: true, subject: true, message: true } });
     let tagged = 0;
@@ -128,8 +128,8 @@ async function seedExtras() {
 const DAY_MS = 24 * 60 * 60 * 1000;
 const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-// Creates a realistic, analytics-friendly dataset: recurring themes across many
-// requesters, spread over the last 28 days, with response/resolution timestamps.
+// Gerçekçi, analitiğe uygun bir veri seti oluşturur: birçok talep sahibine yayılan
+// tekrar eden temalar, son 28 güne dağıtılmış, yanıt/çözüm zaman damgalarıyla.
 async function generateDemoData(departments: Map<string, string>) {
   const MARKER = 'demo.seed.marker@support.local';
   if (await prisma.user.findUnique({ where: { email: MARKER } })) return;

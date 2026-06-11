@@ -25,7 +25,7 @@ function actorName(user: { fullName?: string | null; email: string }): string {
   return user.fullName || user.email;
 }
 
-// Serialize a ticket (or array) with SLA info attached.
+// Bir talebi (veya diziyi) SLA bilgisi eklenmiş şekilde serileştir.
 function serialize<T extends Parameters<typeof withSla>[0]>(t: T) {
   return withSla(t);
 }
@@ -50,7 +50,7 @@ const ticketDetailInclude = {
   attachments: attachmentSelect,
 };
 
-// Validate that the given users may be assigned, and (if a department is set) belong to it.
+// Verilen kullanıcıların atanabilir olduğunu ve (bir departman belirtilmişse) ona ait olduğunu doğrula.
 async function validateAssignees(assigneeIds: string[], departmentId?: string | null): Promise<void> {
   if (!assigneeIds.length) return;
   const users = await prisma.user.findMany({
@@ -77,7 +77,7 @@ async function validateAssignees(assigneeIds: string[], departmentId?: string | 
   }
 }
 
-// Replaces a ticket's assignees with the given set.
+// Bir talebin atanan kişilerini verilen kümeyle değiştirir.
 async function setAssignees(ticketId: string, assigneeIds: string[]): Promise<void> {
   await prisma.$transaction([
     prisma.ticketAssignee.deleteMany({ where: { ticketId } }),
@@ -92,13 +92,13 @@ async function setAssignees(ticketId: string, assigneeIds: string[]): Promise<vo
   ]);
 }
 
-// Hides internal notes from end-users (non-staff).
+// Dahili notları son kullanıcılardan (staff olmayanlar) gizler.
 function filterReplies<T extends { replies?: { isInternal: boolean }[] }>(ticket: T, user: Principal): T {
   if (isStaff(user.role) || !ticket.replies) return ticket;
   return { ...ticket, replies: ticket.replies.filter((r) => !r.isInternal) };
 }
 
-// GET /tickets — scoped by role; supports status/priority/department/assignee filters.
+// GET /tickets — role'e göre kapsamlanır; status/priority/departman/atanan kişi filtrelerini destekler.
 export async function listTickets(req: Request, res: Response): Promise<void> {
   const { status, priority, departmentId, assigneeId, scope, search, tag } = listTicketsQuerySchema.parse(req.query);
   const user = req.user as Principal;
@@ -134,7 +134,7 @@ export async function listTickets(req: Request, res: Response): Promise<void> {
   res.json({ tickets: tickets.map((t) => serialize(t)) });
 }
 
-// GET /tickets/:id — owner / dept staff / assignee / admin only.
+// GET /tickets/:id — yalnızca sahip / departman staff'ı / atanan kişi / admin.
 export async function getTicket(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const ticket = await prisma.ticket.findUnique({
@@ -150,7 +150,7 @@ export async function getTicket(req: Request, res: Response): Promise<void> {
   res.json({ ticket: serialize(filterReplies(ticket, user)) });
 }
 
-// POST /tickets — create a ticket as requester, optionally targeting a department / assignees.
+// POST /tickets — talep sahibi olarak bir talep oluştur, isteğe bağlı olarak bir departman / atanan kişi hedefle.
 export async function createTicket(req: Request, res: Response): Promise<void> {
   const data = createTicketSchema.parse(req.body);
   const user = req.user as Principal;
@@ -182,7 +182,7 @@ export async function createTicket(req: Request, res: Response): Promise<void> {
     detail: { subject: ticket.subject, priority: ticket.priority },
   });
 
-  // Auto-assign to the least-loaded agent when no one was chosen manually.
+  // Manuel olarak kimse seçilmediğinde en az yüklü agent'a otomatik ata.
   let autoAssignedId: string | null = null;
   if (!assigneeIds.length && ticket.departmentId) {
     autoAssignedId = await pickLeastLoadedAgent(ticket.departmentId);
@@ -199,7 +199,7 @@ export async function createTicket(req: Request, res: Response): Promise<void> {
 
   const finalAssignees = autoAssignedId ? [autoAssignedId] : assigneeIds;
 
-  // Real-time: announce + notify staff/assignees of the new ticket.
+  // Gerçek zamanlı: yeni talebi duyur + staff/atanan kişileri bilgilendir.
   emitTicketCreated(ticket, finalAssignees);
   const notif = { type: 'created' as const, ticketId: ticket.id, ticketSubject: ticket.subject, actor: user.email };
   if (ticket.departmentId) notifyDepartment(ticket.departmentId, notif, user.id);
@@ -209,7 +209,7 @@ export async function createTicket(req: Request, res: Response): Promise<void> {
   res.status(201).json({ ticket: serialize(ticket) });
 }
 
-// PUT /tickets/:id — requester edits content; staff edit workflow + routing.
+// PUT /tickets/:id — talep sahibi içeriği düzenler; staff iş akışı + yönlendirmeyi düzenler.
 export async function updateTicket(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const data = updateTicketSchema.parse(req.body);
@@ -223,7 +223,7 @@ export async function updateTicket(req: Request, res: Response): Promise<void> {
   const staff = isStaff(user.role);
   const isOwner = existing.userId === user.id;
 
-  // End-users may only edit the content of their own tickets.
+  // Son kullanıcılar yalnızca kendi taleplerinin içeriğini düzenleyebilir.
   if (!staff && !isOwner) {
     throw new AppError(403, 'You do not have access to this ticket');
   }
@@ -235,11 +235,11 @@ export async function updateTicket(req: Request, res: Response): Promise<void> {
   if (data.category !== undefined) update.category = data.category;
   if (data.tags !== undefined) update.tags = data.tags;
 
-  // Workflow + routing fields are staff-only.
+  // İş akışı + yönlendirme alanları yalnızca staff'a özeldir.
   if (staff) {
     if (data.status !== undefined) {
       update.status = data.status;
-      // Track resolution time when closing (and clear it if reopened).
+      // Kapatırken çözüm süresini izle (yeniden açılırsa temizle).
       update.resolvedAt = data.status === 'closed' ? new Date() : null;
     }
     if (data.departmentId !== undefined) {
@@ -251,11 +251,11 @@ export async function updateTicket(req: Request, res: Response): Promise<void> {
 
   await prisma.ticket.update({ where: { id: existing.id }, data: update });
 
-  // Audit field changes.
+  // Alan değişikliklerini audit'e kaydet.
   const who = { ticketId: existing.id, actorId: user.id, actorName: actorName(user as never) };
   if (data.status !== undefined && data.status !== existing.status) {
     audit('ticket.status', { ...who, detail: { from: existing.status, to: data.status } });
-    // Ticket just closed → schedule a delayed CSAT survey email via the worker.
+    // Talep yeni kapandı → worker üzerinden gecikmeli bir CSAT anketi e-postası planla.
     if (data.status === 'closed') void enqueueCsatRequest(existing.id);
   }
   if (data.priority !== undefined && data.priority !== existing.priority)
@@ -263,7 +263,7 @@ export async function updateTicket(req: Request, res: Response): Promise<void> {
   if (data.departmentId !== undefined && data.departmentId !== existing.departmentId)
     audit('ticket.department', { ...who, detail: { to: data.departmentId } });
 
-  // Reassignment (staff only).
+  // Yeniden atama (yalnızca staff).
   if (data.assigneeIds !== undefined) {
     if (!staff) throw new AppError(403, 'Only staff can assign tickets');
     const deptId = data.departmentId !== undefined ? data.departmentId : existing.departmentId;
@@ -281,7 +281,7 @@ export async function updateTicket(req: Request, res: Response): Promise<void> {
   res.json({ ticket: serialize(filterReplies(ticket!, user)) });
 }
 
-// PATCH /tickets/:id/assign — staff replace the assignee set.
+// PATCH /tickets/:id/assign — staff atanan kişi kümesini değiştirir.
 export async function assignTicket(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const { assigneeIds } = assignTicketSchema.parse(req.body);
@@ -301,7 +301,7 @@ export async function assignTicket(req: Request, res: Response): Promise<void> {
   await validateAssignees(assigneeIds, existing.departmentId);
   await setAssignees(existing.id, assigneeIds);
 
-  // Picking up an unassigned/open ticket moves it into progress.
+  // Atanmamış/açık bir talebin üstlenilmesi onu işleme (in_progress) taşır.
   if (assigneeIds.length && existing.status === 'open') {
     await prisma.ticket.update({ where: { id: existing.id }, data: { status: 'in_progress' } });
   }
@@ -318,7 +318,7 @@ export async function assignTicket(req: Request, res: Response): Promise<void> {
     detail: { assignees: assigneeIds },
   });
 
-  // Real-time: broadcast update + notify newly assigned agents.
+  // Gerçek zamanlı: güncellemeyi yayınla + yeni atanan agent'ları bilgilendir.
   emitTicketUpdated(ticket!, assigneeIds);
   const newlyAssigned = assigneeIds.filter((id) => !previousIds.has(id));
   if (newlyAssigned.length) {
@@ -332,7 +332,7 @@ export async function assignTicket(req: Request, res: Response): Promise<void> {
   res.json({ ticket: serialize(filterReplies(ticket!, user)) });
 }
 
-// DELETE /tickets/:id — requester (own) or admin.
+// DELETE /tickets/:id — talep sahibi (kendi talebi) veya admin.
 export async function deleteTicket(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const existing = await prisma.ticket.findUnique({ where: { id: req.params.id } });
@@ -354,7 +354,7 @@ export async function deleteTicket(req: Request, res: Response): Promise<void> {
   res.status(204).send();
 }
 
-// POST /tickets/:id/replies — participants reply; staff may add internal notes.
+// POST /tickets/:id/replies — katılımcılar yanıt verir; staff dahili notlar ekleyebilir.
 export async function addReply(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const { message, isInternal } = createReplySchema.parse(req.body);
@@ -365,7 +365,7 @@ export async function addReply(req: Request, res: Response): Promise<void> {
     throw new AppError(403, 'You do not have access to this ticket');
   }
 
-  const internal = isInternal && isStaff(user.role); // only staff can post internal notes
+  const internal = isInternal && isStaff(user.role); // yalnızca staff dahili not ekleyebilir
   const reply = await prisma.ticketReply.create({
     data: { ticketId: ticket.id, authorId: user.id, message, isInternal: internal },
     include: { author: userSelect },
@@ -377,10 +377,10 @@ export async function addReply(req: Request, res: Response): Promise<void> {
     actorName: actorName(reply.author as never),
   });
 
-  // Real-time: push the reply into the live conversation (internal → staff room only).
+  // Gerçek zamanlı: yanıtı canlı konuşmaya it (dahili → yalnızca staff odası).
   emitReply(ticket.id, reply, internal);
 
-  // A public staff reply records first-response time and advances an open ticket.
+  // Herkese açık bir staff yanıtı ilk yanıt süresini kaydeder ve açık bir talebi ilerletir.
   if (isStaff(user.role) && !internal) {
     const upd: Prisma.TicketUpdateInput = {};
     if (!ticket.firstResponseAt) upd.firstResponseAt = new Date();
@@ -391,12 +391,12 @@ export async function addReply(req: Request, res: Response): Promise<void> {
     }
   }
 
-  // Notifications for public replies (internal notes stay silent to customers).
+  // Herkese açık yanıtlar için bildirimler (dahili notlar müşterilere sessiz kalır).
   if (!internal) {
     const author = actorName(reply.author);
     const notif = { type: 'reply' as const, ticketId: ticket.id, ticketSubject: ticket.subject, actor: author };
     if (isStaff(user.role)) {
-      // Staff replied → notify the requester (in-app + email).
+      // Staff yanıtladı → talep sahibini bilgilendir (uygulama içi + e-posta).
       if (ticket.userId !== user.id) {
         notifyUsers([ticket.userId], notif, user.id);
         const requester = await prisma.user.findUnique({
@@ -404,7 +404,7 @@ export async function addReply(req: Request, res: Response): Promise<void> {
           select: { email: true },
         });
         if (requester) {
-          // Hand off to the worker via Redis (Bull) — no need to block the reply.
+          // Redis (Bull) üzerinden worker'a devret — yanıtı bloklamaya gerek yok.
           void enqueueReplyEmail({
             to: requester.email,
             ticketId: ticket.id,
@@ -415,7 +415,7 @@ export async function addReply(req: Request, res: Response): Promise<void> {
         }
       }
     } else {
-      // Requester replied → notify assigned agents + department + admins.
+      // Talep sahibi yanıtladı → atanan agent'ları + departmanı + admin'leri bilgilendir.
       const assignees = await prisma.ticketAssignee.findMany({
         where: { ticketId: ticket.id },
         select: { userId: true },
@@ -430,7 +430,7 @@ export async function addReply(req: Request, res: Response): Promise<void> {
   res.status(201).json({ reply });
 }
 
-// PATCH /tickets/:id/escalate — staff escalate (bump priority + flag + notify).
+// PATCH /tickets/:id/escalate — staff yükseltir (priority'yi artır + işaretle + bilgilendir).
 export async function escalateTicket(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const reason = typeof req.body?.reason === 'string' ? req.body.reason : 'manual';
@@ -458,7 +458,7 @@ export async function escalateTicket(req: Request, res: Response): Promise<void>
   res.json({ ticket: serialize(filterReplies(ticket!, user)) });
 }
 
-// POST /tickets/:id/reopen — requester or staff reopens a closed ticket.
+// POST /tickets/:id/reopen — talep sahibi veya staff kapalı bir talebi yeniden açar.
 export async function reopenTicket(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const existing = await prisma.ticket.findUnique({ where: { id: req.params.id } });
@@ -485,7 +485,7 @@ export async function reopenTicket(req: Request, res: Response): Promise<void> {
   res.json({ ticket: serialize(filterReplies(ticket!, user)) });
 }
 
-// GET /tickets/:id/activity — audit timeline (internal notes hidden from end-users).
+// GET /tickets/:id/activity — audit zaman çizelgesi (dahili notlar son kullanıcılardan gizli).
 export async function getActivity(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const ticket = await prisma.ticket.findUnique({
@@ -501,7 +501,7 @@ export async function getActivity(req: Request, res: Response): Promise<void> {
   res.json({ activity: visible });
 }
 
-// POST /tickets/:id/csat — requester rates a closed ticket (once).
+// POST /tickets/:id/csat — talep sahibi kapalı bir talebi puanlar (bir kez).
 export async function submitCsat(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const { rating, comment } = csatSchema.parse(req.body);
@@ -522,7 +522,7 @@ export async function submitCsat(req: Request, res: Response): Promise<void> {
   res.json({ ticket: serialize(filterReplies(full!, user)) });
 }
 
-// GET /tickets/tags — distinct tags within the user's scope (for filtering).
+// GET /tickets/tags — kullanıcının kapsamı içindeki benzersiz tag'ler (filtreleme için).
 export async function listTags(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const scopeWhere = await buildTicketScope(user);
@@ -532,7 +532,7 @@ export async function listTags(req: Request, res: Response): Promise<void> {
   res.json({ tags: [...set].sort((a, b) => a.localeCompare(b, 'tr')) });
 }
 
-// POST /tickets/bulk — apply an action to multiple tickets (staff).
+// POST /tickets/bulk — birden fazla talebe bir eylem uygula (staff).
 export async function bulkUpdate(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
   const { ids, action, status, assigneeIds } = bulkTicketSchema.parse(req.body);
@@ -602,7 +602,7 @@ export async function bulkUpdate(req: Request, res: Response): Promise<void> {
   res.json({ updated, skipped });
 }
 
-// GET /tickets/estimate?priority=&departmentId= — estimated response/resolution time.
+// GET /tickets/estimate?priority=&departmentId= — tahmini yanıt/çözüm süresi.
 export async function getEstimate(req: Request, res: Response): Promise<void> {
   const parsedPriority = priorityEnum.safeParse(req.query.priority);
   const priority = parsedPriority.success ? parsedPriority.data : 'medium';

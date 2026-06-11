@@ -1,6 +1,6 @@
 type Cell = string | number | null | undefined;
 
-// Builds a UTF-8 (BOM) CSV and triggers a browser download.
+// UTF-8 (BOM) CSV oluşturur ve tarayıcıda indirmeyi tetikler.
 export function downloadCsv(filename: string, rows: Cell[][]): void {
   const esc = (v: Cell): string => {
     const s = v == null ? '' : String(v);

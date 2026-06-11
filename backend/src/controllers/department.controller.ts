@@ -9,7 +9,7 @@ const memberInclude = {
   _count: { select: { tickets: true, members: true } },
 };
 
-// Ensure all given users are support staff before adding them to a department.
+// Bir departmana eklemeden önce verilen tüm kullanıcıların destek personeli (staff) olduğundan emin ol.
 async function assertStaff(memberIds: string[]): Promise<void> {
   if (!memberIds.length) return;
   const users = await prisma.user.findMany({
@@ -36,7 +36,7 @@ async function setMembers(departmentId: string, memberIds: string[]): Promise<vo
   ]);
 }
 
-// GET /departments — list (any authenticated user; needed for ticket routing).
+// GET /departments — listele (kimliği doğrulanmış her kullanıcı; talep yönlendirmesi için gerekli).
 export async function listDepartments(_req: Request, res: Response): Promise<void> {
   const departments = await prisma.department.findMany({
     orderBy: { name: 'asc' },

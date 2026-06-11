@@ -18,7 +18,7 @@ const userSelect = {
   _count: { select: { tickets: true, assignments: true } },
 };
 
-// A readable temporary password for a freshly-created account.
+// Yeni oluşturulan bir hesap için okunabilir geçici parola.
 function generateTempPassword(): string {
   const base = crypto
     .randomBytes(9)
@@ -38,7 +38,7 @@ async function assertDepartmentsExist(departmentIds: string[]): Promise<void> {
   }
 }
 
-// GET /users (staff) — directory; supports role/department/search filters.
+// GET /users (staff) — kullanıcı dizini; role/departman/arama filtrelerini destekler.
 export async function listUsers(req: Request, res: Response): Promise<void> {
   const { role, departmentId, search } = listUsersQuerySchema.parse(req.query);
 
@@ -63,14 +63,14 @@ export async function listUsers(req: Request, res: Response): Promise<void> {
   res.json({ users });
 }
 
-// PUT /users/:id (admin) — change role, name, department memberships.
+// PUT /users/:id (admin) — role, ad ve departman üyeliklerini değiştir.
 export async function updateUser(req: Request, res: Response): Promise<void> {
   const { role, fullName, departmentIds } = updateUserSchema.parse(req.body);
 
   const existing = await prisma.user.findUnique({ where: { id: req.params.id } });
   if (!existing) throw new AppError(404, 'User not found');
 
-  // Don't let an admin accidentally strip their own admin role.
+  // Bir admin'in yanlışlıkla kendi admin role'ünü kaldırmasına izin verme.
   if (existing.id === req.user!.id && role && role !== 'admin') {
     throw new AppError(422, 'You cannot change your own admin role');
   }
@@ -101,7 +101,7 @@ export async function updateUser(req: Request, res: Response): Promise<void> {
   res.json({ user });
 }
 
-// POST /users (admin) — create a staff/customer account with a temp password.
+// POST /users (admin) — geçici parolayla bir staff/müşteri hesabı oluştur.
 export async function createUser(req: Request, res: Response): Promise<void> {
   const { email, fullName, role, departmentIds } = createUserSchema.parse(req.body);
 
@@ -128,7 +128,7 @@ export async function createUser(req: Request, res: Response): Promise<void> {
 
   await sendWelcomeEmail(email, fullName ?? null, tempPassword);
 
-  // Return the temp password so the admin can relay it directly if needed.
+  // Gerekirse admin'in doğrudan iletebilmesi için geçici parolayı döndür.
   res.status(201).json({ user, tempPassword });
 }
 

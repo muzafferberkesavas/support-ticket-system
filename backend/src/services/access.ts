@@ -9,7 +9,7 @@ export interface Principal {
   role: Role;
 }
 
-// Staff = anyone who handles tickets (not an end-user customer).
+// Personel = talepleri ele alan herkes (son kullanıcı müşteri değil).
 export function isStaff(role: Role): boolean {
   return role === 'agent' || role === 'team_lead' || role === 'admin';
 }
@@ -18,7 +18,7 @@ export function isManager(role: Role): boolean {
   return role === 'team_lead' || role === 'admin';
 }
 
-// Department ids the user belongs to (agents / team leads).
+// Kullanıcının ait olduğu departman id'leri (agent'lar / takım liderleri).
 export async function getUserDepartmentIds(userId: string): Promise<string[]> {
   const rows = await prisma.departmentMember.findMany({
     where: { userId },
@@ -27,7 +27,7 @@ export async function getUserDepartmentIds(userId: string): Promise<string[]> {
   return rows.map((r) => r.departmentId);
 }
 
-// Builds the Prisma `where` that scopes a ticket list to what the user may see.
+// Talep listesini kullanıcının görebileceğiyle sınırlayan Prisma `where` ifadesini oluşturur.
 export async function buildTicketScope(user: Principal): Promise<Prisma.TicketWhereInput> {
   if (user.role === 'admin') return {};
 
@@ -42,11 +42,11 @@ export async function buildTicketScope(user: Principal): Promise<Prisma.TicketWh
     };
   }
 
-  // End-user: only their own tickets.
+  // Son kullanıcı: yalnızca kendi talepleri.
   return { userId: user.id };
 }
 
-// Whether the user may view/act on a specific ticket.
+// Kullanıcının belirli bir talebi görüntüleyip/üzerinde işlem yapıp yapamayacağı.
 export async function canAccessTicket(
   user: Principal,
   ticket: { id: string; userId: string; departmentId: string | null },

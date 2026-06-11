@@ -28,14 +28,14 @@ const envSchema = z.object({
   // Dosya üretim mikroservisi (Excel/PDF). Backend bu URL'ye istek atar; DB'si yok.
   FILE_SERVICE_URL: z.string().default('http://file-service:4000'),
   FILE_SERVICE_TOKEN: z.string().optional().default(''),
-  // Worker: cron schedule for the daily digest job (default 08:00 every day).
+  // Worker: günlük özet (digest) job'ının cron zamanlaması (varsayılan her gün 08:00).
   DIGEST_CRON: z.string().default('0 8 * * *'),
-  // Worker: SLA auto-escalation + stale-reminder sweep cron (default every 2 min).
+  // Worker: SLA otomatik yükseltme + bekleyen talep hatırlatma taraması (sweep) cron'u (varsayılan her 2 dk).
   SLA_SWEEP_CRON: z.string().default('*/2 * * * *'),
   STALE_TICKET_DAYS: z.coerce.number().default(3),
-  // Delay before a CSAT survey email is sent after a ticket closes (ms; default 1h).
+  // Talep kapandıktan sonra CSAT anketi e-postasının gönderilmesinden önceki gecikme (ms; varsayılan 1 saat).
   CSAT_DELAY_MS: z.coerce.number().default(3_600_000),
-  // Bull Board (worker queue dashboard) — basic auth + port.
+  // Bull Board (worker queue panosu) — basic auth + port.
   BULLBOARD_PORT: z.coerce.number().default(3001),
   BULLBOARD_USER: z.string().default('admin'),
   BULLBOARD_PASS: z.string().default('Admin123!'),

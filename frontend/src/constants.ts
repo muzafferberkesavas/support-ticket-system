@@ -6,7 +6,7 @@ export const PRIORITY_VALUES: Priority[] = ['low', 'medium', 'high'];
 export const STATUS_VALUES: Status[] = ['open', 'in_progress', 'closed'];
 export const ROLE_VALUES: Role[] = ['user', 'agent', 'team_lead', 'admin'];
 
-// Numeric ranks so tables sort by severity/workflow order, not alphabetically.
+// Tablolar alfabetik değil, önem/iş akışı sırasına göre sıralansın diye sayısal sıra değerleri.
 export const PRIORITY_RANK: Record<Priority, number> = { low: 1, medium: 2, high: 3 };
 export const STATUS_RANK: Record<Status, number> = { open: 1, in_progress: 2, closed: 3 };
 
@@ -29,7 +29,7 @@ export const ROLE_META: Record<Role, { severity: Severity; icon: string }> = {
   admin: { severity: 'contrast', icon: 'pi pi-shield' },
 };
 
-// Locale-aware datetime formatter.
+// Dile (locale) duyarlı tarih-saat biçimlendirici.
 export function formatDateTime(value?: string | null, locale = 'tr'): string {
   if (!value) return '—';
   return new Date(value).toLocaleString(locale === 'en' ? 'en-GB' : 'tr-TR', {
@@ -41,7 +41,7 @@ export function formatDateTime(value?: string | null, locale = 'tr'): string {
   });
 }
 
-// Initials for avatars.
+// Avatarlar için baş harfler.
 export function initials(name?: string | null, email?: string | null): string {
   const source = (name || email || '?').trim();
   const parts = source.split(/\s+/);

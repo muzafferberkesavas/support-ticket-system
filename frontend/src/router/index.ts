@@ -105,7 +105,7 @@ router.beforeEach((to) => {
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } };
   }
-  // Force first-login password change before anything else.
+  // Her şeyden önce ilk girişte zorunlu şifre değişimini dayat.
   if (auth.isAuthenticated && auth.mustChangePassword && to.name !== 'change-password') {
     return { name: 'change-password' };
   }

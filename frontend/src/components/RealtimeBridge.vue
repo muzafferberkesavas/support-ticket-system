@@ -36,7 +36,7 @@ function onNotification(n: NotificationPayload) {
     summary: t(titleKey),
     detail: t(bodyKey, { actor: n.actor ?? '', subject: n.ticketSubject ?? '' }),
     life: 6000,
-    // carry the ticket id so the toast can deep-link
+    // toast'ın ilgili talebe yönlendirme yapabilmesi için talep id'sini taşı
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: { ticketId: n.ticketId } as any,
   });

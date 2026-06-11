@@ -9,7 +9,7 @@ import { canAccessTicket, getUserDepartmentIds, isStaff, type Principal } from '
 
 let io: Server | null = null;
 
-// ── Room helpers ────────────────────────────────────────────────────
+// ── Oda yardımcıları ────────────────────────────────────────────────
 const userRoom = (id: string) => `user:${id}`;
 const deptRoom = (id: string) => `dept:${id}`;
 const ticketRoom = (id: string) => `ticket:${id}`;
@@ -18,7 +18,7 @@ const ADMIN_ROOM = 'role:admin';
 
 type SocketUser = Principal;
 
-// ── Init ────────────────────────────────────────────────────────────
+// ── Başlatma ────────────────────────────────────────────────────────
 export async function initRealtime(httpServer: HttpServer): Promise<void> {
   io = new Server(httpServer, {
     cors: {
@@ -27,7 +27,7 @@ export async function initRealtime(httpServer: HttpServer): Promise<void> {
     },
   });
 
-  // Redis adapter for multi-instance broadcasting.
+  // Çok örnekli (multi-instance) yayın için Redis adapter.
   try {
     const pubClient = new Redis(env.REDIS_URL, { lazyConnect: true });
     const subClient = pubClient.duplicate();
@@ -39,8 +39,8 @@ export async function initRealtime(httpServer: HttpServer): Promise<void> {
     console.warn('⚠️  Redis adapter unavailable, running Socket.IO single-instance:', err);
   }
 
-  // JWT auth via the handshake `auth` payload (not headers — browsers can't
-  // set headers on native WebSocket connections).
+  // JWT doğrulaması handshake `auth` payload'ı üzerinden yapılır (header değil —
+  // tarayıcılar native WebSocket bağlantılarında header ayarlayamaz).
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token as string | undefined;
     if (!token) return next(new Error('Authentication required'));
@@ -63,17 +63,17 @@ export async function initRealtime(httpServer: HttpServer): Promise<void> {
 async function onConnection(socket: Socket): Promise<void> {
   const user = (socket.data as { user: SocketUser }).user;
 
-  // Personal room for direct notifications.
+  // Doğrudan bildirimler için kişisel oda.
   socket.join(userRoom(user.id));
   if (user.role === 'admin') socket.join(ADMIN_ROOM);
 
-  // Staff also join their department rooms.
+  // Staff kullanıcılar ayrıca kendi department odalarına katılır.
   if (isStaff(user.role)) {
     const deptIds = await getUserDepartmentIds(user.id);
     deptIds.forEach((id) => socket.join(deptRoom(id)));
   }
 
-  // Subscribe to a specific ticket's live conversation (access-checked).
+  // Belirli bir ticket'ın canlı konuşmasına abone ol (erişim kontrolü yapılır).
   socket.on('ticket:subscribe', async (ticketId: string, ack?: (ok: boolean) => void) => {
     try {
       const ticket = await prisma.ticket.findUnique({
@@ -99,7 +99,7 @@ async function onConnection(socket: Socket): Promise<void> {
     await emitPresence(ticketId);
   });
 
-  // Typing indicator — broadcast to others viewing the same ticket.
+  // Yazıyor göstergesi — aynı ticket'ı görüntüleyen diğerlerine yayınla.
   socket.on('ticket:typing', (payload: { ticketId: string; isTyping: boolean }) => {
     if (!payload?.ticketId) return;
     socket.to(ticketRoom(payload.ticketId)).emit('typing', {
@@ -110,7 +110,7 @@ async function onConnection(socket: Socket): Promise<void> {
   });
 
   socket.on('disconnecting', () => {
-    // Recompute presence for any ticket rooms this socket was in.
+    // Bu socket'in bulunduğu tüm ticket odaları için presence bilgisini yeniden hesapla.
     for (const room of socket.rooms) {
       if (room.startsWith('ticket:') && !room.endsWith(':staff')) {
         const ticketId = room.slice('ticket:'.length);
@@ -120,7 +120,7 @@ async function onConnection(socket: Socket): Promise<void> {
   });
 }
 
-// Distinct users currently viewing a ticket → broadcast to that room.
+// Bir ticket'ı şu anda görüntüleyen benzersiz kullanıcılar → o odaya yayınla.
 async function emitPresence(ticketId: string): Promise<void> {
   if (!io) return;
   const sockets = await io.in(ticketRoom(ticketId)).fetchSockets();
@@ -135,7 +135,7 @@ async function emitPresence(ticketId: string): Promise<void> {
   });
 }
 
-// ── Emit helpers (called from controllers) ──────────────────────────
+// ── Emit yardımcıları (controller'lardan çağrılır) ──────────────────
 type TicketLike = { id: string; userId: string; departmentId: string | null };
 
 function ticketTargets(ticket: TicketLike, assigneeIds: string[] = []): Set<string> {
@@ -163,14 +163,14 @@ export function emitTicketDeleted(ticket: TicketLike): void {
   io.to(Array.from(ticketTargets(ticket))).emit('ticket:deleted', { id: ticket.id });
 }
 
-// Reply: internal notes only reach staff (separate room); public replies reach all viewers.
+// Yanıt: dahili notlar yalnızca staff'a ulaşır (ayrı oda); herkese açık yanıtlar tüm görüntüleyenlere ulaşır.
 export function emitReply(ticketId: string, reply: unknown, isInternal: boolean): void {
   if (!io) return;
   const room = isInternal ? ticketStaffRoom(ticketId) : ticketRoom(ticketId);
   io.to(room).emit('ticket:reply', { ticketId, reply });
 }
 
-// Low-level emit to a single user's personal room (used by the notification service).
+// Tek bir kullanıcının kişisel odasına düşük seviyeli emit (notification service tarafından kullanılır).
 export function emitToUser(userId: string, event: string, payload: unknown): void {
   if (!io) return;
   io.to(userRoom(userId)).emit(event, payload);

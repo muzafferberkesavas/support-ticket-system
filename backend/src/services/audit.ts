@@ -21,7 +21,7 @@ interface AuditInput {
   detail?: Record<string, unknown>;
 }
 
-// Fire-and-forget audit recording (never blocks/breaks the request flow).
+// Ateşle-unut denetim kaydı (istek akışını asla bloke etmez/bozmaz).
 export function audit(action: AuditAction, input: AuditInput): void {
   void prisma.auditLog
     .create({
