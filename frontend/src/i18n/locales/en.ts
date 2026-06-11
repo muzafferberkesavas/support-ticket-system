@@ -74,6 +74,7 @@ export default {
       statusCol: 'Status',
       errorsCol: 'Errors',
       strategyLabel: 'For existing records:',
+      ticketsNote: 'Tickets are always added as new (no existing-record detection).',
       confirm: 'Import',
       started: 'Import queued; progress will appear live below.',
       error: 'Import error',

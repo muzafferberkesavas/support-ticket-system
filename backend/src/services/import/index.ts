@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { parseFile } from './parseFile';
 import { userImportAdapter } from './userImport';
+import { ticketImportAdapter } from './ticketImport';
 import type {
   ImportAdapter,
   ImportEntity,
@@ -14,6 +15,7 @@ import type {
 // Varlık → adapter kayıt defteri. Yeni bir varlık eklemek = yeni adapter + bu satır.
 const ADAPTERS: Partial<Record<ImportEntity, ImportAdapter>> = {
   users: userImportAdapter,
+  tickets: ticketImportAdapter,
 };
 
 export function getAdapter(entity: ImportEntity): ImportAdapter {
@@ -38,7 +40,10 @@ export async function buildPreview(entity: ImportEntity, buffer: Buffer, filenam
   const parsed = rawRows.map((raw, i) => {
     const { data, display, errors } = adapter.parseRow(raw, ctx);
     const key = errors.length ? null : adapter.keyOf(data);
-    return { index: i + 1, data, display, errors, key };
+    // Dosya-içi tekrar tespit anahtarı: natural-key'de iş anahtarı (e-posta),
+    // none'da tüm satırın imzası (tam-satır tekrarı yakalanır).
+    const dupKey = errors.length ? null : adapter.dedupStrategy === 'natural-key' ? key : JSON.stringify(data);
+    return { index: i + 1, data, display, errors, key, dupKey };
   });
 
   // Doğal anahtarlı varlıkta sistemde mevcut anahtarları tek sorguda çek.
@@ -53,14 +58,12 @@ export async function buildPreview(entity: ImportEntity, buffer: Buffer, filenam
     let status: RowStatus;
     if (p.errors.length) {
       status = 'error';
-    } else if (adapter.dedupStrategy === 'natural-key' && p.key) {
-      if (seen.has(p.key)) status = 'duplicate';
-      else {
-        seen.add(p.key);
-        status = existing.has(p.key) ? 'exists' : 'new';
-      }
+    } else if (p.dupKey && seen.has(p.dupKey)) {
+      status = 'duplicate';
     } else {
-      status = 'new';
+      if (p.dupKey) seen.add(p.dupKey);
+      // Mevcut tespiti yalnızca doğal anahtarlı varlıkta yapılır.
+      status = adapter.dedupStrategy === 'natural-key' && p.key && existing.has(p.key) ? 'exists' : 'new';
     }
     return { index: p.index, status, key: p.key, errors: p.errors, data: p.data, display: p.display };
   });

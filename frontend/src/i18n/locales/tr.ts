@@ -74,6 +74,7 @@ export default {
       statusCol: 'Durum',
       errorsCol: 'Hatalar',
       strategyLabel: 'Mevcut kayıtlar için:',
+      ticketsNote: 'Talepler yalnızca yeni kayıt olarak eklenir (mevcut tespiti yapılmaz).',
       confirm: 'İçe Aktar',
       started: 'İçe aktarım kuyruğa alındı; ilerleme aşağıda canlı görünecek.',
       error: 'İçe aktarım hatası',

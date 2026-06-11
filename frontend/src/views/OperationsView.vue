@@ -69,7 +69,10 @@ async function emailExport() {
 
 // ── İçe aktarım (import) ─────────────────────────────────────────────
 const importEntity = ref<ExportEntity>('users');
-const importEntityOptions = [{ value: 'users', label: t('operations.export.users') }];
+const importEntityOptions = [
+  { value: 'users', label: t('operations.export.users') },
+  { value: 'tickets', label: t('operations.export.tickets') },
+];
 const fileInput = ref<HTMLInputElement | null>(null);
 const selectedFile = ref<File | null>(null);
 const preview = ref<ImportPreview | null>(null);
@@ -116,7 +119,9 @@ async function doConfirm() {
   if (!preview.value) return;
   confirming.value = true;
   try {
-    await operationsService.confirmImport(preview.value.importId, strategy.value);
+    // Talepler doğal anahtarsızdır → her zaman yalnızca yeni oluşturulur.
+    const strat = preview.value.entity === 'tickets' ? 'createOnly' : strategy.value;
+    await operationsService.confirmImport(preview.value.importId, strat);
     toast.add({ severity: 'success', summary: t('operations.import.started'), life: 3000 });
     preview.value = null;
     selectedFile.value = null;
@@ -299,8 +304,11 @@ onMounted(async () => {
         </DataTable>
 
         <div class="confirm-row">
-          <span class="muted">{{ t('operations.import.strategyLabel') }}</span>
-          <Select v-model="strategy" :options="strategyOptions" optionLabel="label" optionValue="value" />
+          <template v-if="preview.entity !== 'tickets'">
+            <span class="muted">{{ t('operations.import.strategyLabel') }}</span>
+            <Select v-model="strategy" :options="strategyOptions" optionLabel="label" optionValue="value" />
+          </template>
+          <span v-else class="muted">{{ t('operations.import.ticketsNote') }}</span>
           <Button :label="t('operations.import.confirm')" icon="pi pi-check" :loading="confirming" @click="doConfirm" />
         </div>
       </div>
