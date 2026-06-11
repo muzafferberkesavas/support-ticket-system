@@ -346,6 +346,35 @@ yalnızca verilen kolon/satırları dosyaya döker. İki yol vardır:
    gönderir (`format`: `csv` | `excel` | `pdf`).
 
 Böylece ağır/izole dosya üretimi ana servisten ayrılır; mikroservis durumsuz ve DB'siz kalır.
+Dışa aktarım **hem talepler hem kullanıcılar** içindir (`entity`); kolon/satır üreten mantık
+`services/exportData.ts` içinde varlığa göre dallanır.
+
+### Toplu içe aktarım (CSV/Excel — preview/onay + worker)
+
+Veri doğrudan yazılmaz; **önce önizleme, onaydan sonra worker** işler. Akış:
+
+1. **Yükleme** (`POST /imports/:entity`, admin): Dosya bellekte ayrıştırılır
+   (`services/import/parseFile.ts` — csv-parse / exceljs), her satır doğrulanır
+   (zorunlu alan + tip), dosya-içi tekrar ve DB'de mevcut tespiti yapılır
+   (`buildPreview`). Sonuç **Redis'te 60 dk** saklanır; **hiçbir şey yazılmaz**.
+2. **Önizleme**: Kullanıcı satır durumlarını (yeni / mevcut / tekrar / hatalı) ve özeti görür.
+3. **Onay** (`POST /imports/:id/confirm` + strateji): `JOB_BULK_IMPORT` (`attempts:1`) worker'a
+   bırakılır. Worker satırları stratejiye göre işler (`skip` / `update` / `createOnly`),
+   **hatalı satır tüm işi durdurmaz** (satır-içi try/catch), `import:progress`/`import:done`
+   olaylarını admin odasına yayınlar.
+
+Çerçeve varlıktan bağımsızdır (`ImportAdapter`): **users** doğal anahtarlıdır
+(`dedupStrategy: 'natural-key'`, e-posta → skip/update/createOnly), **tickets** doğal
+anahtarsızdır (`'none'`, her satır yeni; yalnızca dosya-içi tam-satır tekrarı). İçe aktarılan
+kullanıcıların hoşgeldin mailleri **ayrı `bulkMailQueue`**'ya gider (interaktif mailleri boğmaz).
+
+### Canlı operasyon dashboard (realtime job telemetri)
+
+Admin "Operasyonlar" sayfası job durumunu **sayfa yenilemeden** gösterir. Worker, Bull kuyruğu
+olaylarında (`active`/`completed`/`failed`) `mailQueue.getJobCounts()` ile **mutlak snapshot**
+üretip `emitToRoom(rooms.admin, 'job:stats'/'job:event')` ile yayınlar (`realtime/jobStats.ts`).
+Frontend `stores/operations.ts` bu olayları dinler; socket koparsa Socket.IO yeniden bağlanır ve
+`connect`'te `GET /jobs/stats` ile tazelenir. Tüm veriler yalnızca `role:admin` odasına gider.
 
 ### HTTPS / kendi domain (self-signed)
 
@@ -370,7 +399,9 @@ Böylece ağır/izole dosya üretimi ana servisten ayrılır; mikroservis durums
 | Bildirim mantığı                | `services/notifications.ts`                                                     |
 | Veri modeli değişikliği         | `prisma/schema.prisma` + yeni migration                                         |
 | Arka plan işi / cron            | `backend/src/queue.ts` (üretici) + `backend/src/worker.ts` (tüketici)           |
-| Talep dışa aktarımı (veri)      | `backend/src/services/exportData.ts`                                            |
+| Dışa aktarım (data, users+tickets) | `backend/src/services/exportData.ts`                                         |
+| Toplu içe aktarım (preview/işleme) | `backend/src/services/import/` (`parseFile`, `index`, `*Import` adapter'ları) |
+| Canlı job dashboard             | `backend/src/realtime/jobStats.ts` + `frontend/src/{views/OperationsView.vue,stores/operations.ts}` |
 | Dosya üretimi (Excel/PDF)       | `file-service/src/{excel,pdf}.ts` + backend `services/fileService.ts` (istemci) |
 | HTTPS / domain / proxy          | `proxy/nginx.conf` + `scripts/gen-certs.sh`                                     |
 | Arayüz metni (TR/EN)            | `frontend/src/i18n/locales/*.ts`                                                |
