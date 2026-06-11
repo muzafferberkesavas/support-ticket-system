@@ -4,13 +4,59 @@ import { useI18n } from 'vue-i18n';
 import Card from 'primevue/card';
 import Tag from 'primevue/tag';
 import Message from 'primevue/message';
+import Button from 'primevue/button';
+import Select from 'primevue/select';
+import { useToast } from 'primevue/usetoast';
 import { useOperationsStore } from '@/stores/operations';
+import { operationsService, type ExportEntity, type ExportFormat } from '@/services/operations.service';
 import { socketConnected, connectSocket } from '@/services/socket';
 import { extractErrorMessage } from '@/services/api';
 
 const { t, te } = useI18n();
+const toast = useToast();
 const ops = useOperationsStore();
 const loadError = ref('');
+
+// ── Dışa aktarım (export) ────────────────────────────────────────────
+const exportEntity = ref<ExportEntity>('tickets');
+const entityOptions = [
+  { value: 'tickets', label: t('operations.export.tickets') },
+  { value: 'users', label: t('operations.export.users') },
+];
+const exportBusy = ref<ExportFormat | 'email' | null>(null);
+
+async function downloadExport(format: ExportFormat) {
+  exportBusy.value = format;
+  try {
+    await operationsService.download(exportEntity.value, format);
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: t('operations.export.error'),
+      detail: extractErrorMessage(err),
+      life: 4000,
+    });
+  } finally {
+    exportBusy.value = null;
+  }
+}
+
+async function emailExport() {
+  exportBusy.value = 'email';
+  try {
+    await operationsService.exportByEmail(exportEntity.value, 'excel');
+    toast.add({ severity: 'success', summary: t('operations.export.queued'), life: 4000 });
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: t('operations.export.error'),
+      detail: extractErrorMessage(err),
+      life: 4000,
+    });
+  } finally {
+    exportBusy.value = null;
+  }
+}
 
 // Canlı sayaç kartları (ham anahtar → görsel).
 const cards = [
@@ -78,6 +124,55 @@ onMounted(async () => {
     </Card>
   </div>
 
+  <!-- Dışa aktarım -->
+  <Card class="export-card">
+    <template #title>{{ t('operations.export.title') }}</template>
+    <template #content>
+      <p class="muted" style="margin-top: -0.4rem">{{ t('operations.export.subtitle') }}</p>
+      <div class="export-row">
+        <Select
+          v-model="exportEntity"
+          :options="entityOptions"
+          optionLabel="label"
+          optionValue="value"
+          class="export-entity"
+        />
+        <Button
+          :label="t('operations.export.csv')"
+          icon="pi pi-file"
+          outlined
+          :loading="exportBusy === 'csv'"
+          :disabled="exportBusy !== null"
+          @click="downloadExport('csv')"
+        />
+        <Button
+          :label="t('operations.export.excel')"
+          icon="pi pi-file-excel"
+          outlined
+          :loading="exportBusy === 'excel'"
+          :disabled="exportBusy !== null"
+          @click="downloadExport('excel')"
+        />
+        <Button
+          :label="t('operations.export.pdf')"
+          icon="pi pi-file-pdf"
+          outlined
+          :loading="exportBusy === 'pdf'"
+          :disabled="exportBusy !== null"
+          @click="downloadExport('pdf')"
+        />
+        <Button
+          :label="t('operations.export.email')"
+          icon="pi pi-envelope"
+          text
+          :loading="exportBusy === 'email'"
+          :disabled="exportBusy !== null"
+          @click="emailExport"
+        />
+      </div>
+    </template>
+  </Card>
+
   <!-- Son işlemler -->
   <Card class="recent">
     <template #title>{{ t('operations.recentTitle') }}</template>
@@ -122,6 +217,19 @@ onMounted(async () => {
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 1rem;
   margin-bottom: 1.25rem;
+}
+.export-card {
+  margin-bottom: 1.25rem;
+}
+.export-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+.export-entity {
+  min-width: 160px;
 }
 .stat-row {
   display: flex;

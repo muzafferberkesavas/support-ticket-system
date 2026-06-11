@@ -24,7 +24,7 @@ import {
 } from './services/mailer';
 import { runSlaSweep } from './services/slaSweep';
 import { refreshSlaTargets } from './services/sla';
-import { buildExportData, buildCsv } from './services/exportData';
+import { buildExportData, buildCsv, EXPORT_META } from './services/exportData';
 import { generateFile, FILE_META, type FileFormat } from './services/fileService';
 import { emitJobStats, emitJobEvent } from './realtime/jobStats';
 import { env } from './env';
@@ -106,31 +106,34 @@ mailQueue.process(JOB_CSAT_REQUEST, async (job) => {
 
 mailQueue.process(JOB_EXPORT, async (job) => {
   const d = job.data as ExportJob;
+  const entity = d.entity || 'tickets';
   const { columns, rows, count } = await buildExportData(
+    entity,
     { id: d.requesterId, email: d.email, role: d.requesterRole },
     d.filters,
   );
   const format = d.format || 'csv';
+  const meta = EXPORT_META[entity];
 
   if (format === 'csv') {
     // CSV worker içinde yerel üretilir (mikroservise gerek yok).
     const csv = buildCsv(columns, rows);
-    await sendExportEmail(d.email, d.requestedByName, csv, 'talepler-export.csv', count);
+    await sendExportEmail(d.email, d.requestedByName, csv, `${meta.baseName}.csv`, count);
   } else {
     // Excel/PDF file-service mikroservisinden alınır (backend → servis → dosya).
     const fmt = format as FileFormat;
     const { ext, contentType } = FILE_META[fmt];
-    const filename = `talepler-export.${ext}`;
+    const filename = `${meta.baseName}.${ext}`;
     const file = await generateFile(fmt, {
-      title: 'Talep Dışa Aktarımı',
+      title: meta.title,
       filename,
-      sheetName: 'Talepler',
+      sheetName: meta.sheet,
       columns,
       rows,
     });
     await sendExportEmail(d.email, d.requestedByName, file, filename, count, contentType);
   }
-  return { count, format };
+  return { count, format, entity };
 });
 
 // ── Operasyon dashboard'una canlı job telemetrisi ────────────────────

@@ -3,7 +3,7 @@ import { prisma } from '../prisma';
 import { enqueueDigestNow, enqueueExport } from '../queue';
 import { exportFiltersSchema } from '../schemas';
 import type { Principal } from '../services/access';
-import { buildExportData } from '../services/exportData';
+import { buildExportData, buildCsv, EXPORT_META } from '../services/exportData';
 import { generateFile, FILE_META, type FileFormat } from '../services/fileService';
 import { getJobStats, getRecentOps } from '../realtime/jobStats';
 
@@ -26,13 +26,19 @@ export async function runDigest(_req: Request, res: Response): Promise<void> {
 // İstek hemen döner (ağır iş üzerinde bloklama yok).
 export async function runExport(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
-  const { format, ...filters } = exportFiltersSchema.parse(req.body ?? {});
+  const { format, entity, ...filters } = exportFiltersSchema.parse(req.body ?? {});
+  // Kullanıcı dışa aktarımı yalnızca admin'e açıktır.
+  if (entity === 'users' && user.role !== 'admin') {
+    res.status(403).json({ error: 'Kullanıcı dışa aktarımı için admin yetkisi gerekir' });
+    return;
+  }
   const me = await prisma.user.findUnique({ where: { id: user.id }, select: { fullName: true, email: true } });
   const job = await enqueueExport({
     requesterId: user.id,
     requesterRole: user.role,
     email: me?.email ?? user.email,
     requestedByName: me?.fullName ?? user.email,
+    entity,
     format,
     filters,
   });
@@ -45,20 +51,33 @@ export async function runExport(req: Request, res: Response): Promise<void> {
 // gidiş-dönüşünü gösterir.
 export async function downloadExport(req: Request, res: Response): Promise<void> {
   const user = req.user as Principal;
-  const { format, ...filters } = exportFiltersSchema.parse(req.body ?? {});
-  if (format === 'csv') {
-    // Senkron indirme yalnızca mikroservis formatları (excel/pdf) içindir.
-    res.status(400).json({ error: 'Senkron indirme için format excel veya pdf olmalı' });
+  const { format, entity, ...filters } = exportFiltersSchema.parse(req.body ?? {});
+  if (entity === 'users' && user.role !== 'admin') {
+    res.status(403).json({ error: 'Kullanıcı dışa aktarımı için admin yetkisi gerekir' });
     return;
   }
+  const meta = EXPORT_META[entity];
+  const { columns, rows } = await buildExportData(entity, user, filters);
+
+  // CSV worker/file-service gerektirmez; yerel üretilip BOM ile gönderilir.
+  if (format === 'csv') {
+    const csv = '﻿' + buildCsv(columns, rows);
+    res
+      .status(200)
+      .set('Content-Type', 'text/csv; charset=utf-8')
+      .set('Content-Disposition', `attachment; filename="${meta.baseName}.csv"`)
+      .send(csv);
+    return;
+  }
+
+  // Excel/PDF → file-service mikroservisi.
   const fmt = format as FileFormat;
-  const { columns, rows } = await buildExportData(user, filters);
   const { ext, contentType } = FILE_META[fmt];
-  const filename = `talepler-export.${ext}`;
+  const filename = `${meta.baseName}.${ext}`;
   const file = await generateFile(fmt, {
-    title: 'Talep Dışa Aktarımı',
+    title: meta.title,
     filename,
-    sheetName: 'Talepler',
+    sheetName: meta.sheet,
     columns,
     rows,
   });

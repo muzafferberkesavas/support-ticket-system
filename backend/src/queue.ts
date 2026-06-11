@@ -16,6 +16,8 @@ export interface ExportJob {
   requesterRole: 'user' | 'agent' | 'team_lead' | 'admin';
   email: string;
   requestedByName: string;
+  // tickets = talepler, users = kullanıcılar.
+  entity: 'tickets' | 'users';
   // csv = worker yerel üretir; excel/pdf = file-service mikroservisinden alınır.
   format: 'csv' | 'excel' | 'pdf';
   filters: Record<string, string | undefined>;

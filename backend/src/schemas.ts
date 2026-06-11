@@ -81,13 +81,17 @@ export const updateSlaSchema = z.object({
 });
 
 export const exportFormatEnum = z.enum(['csv', 'excel', 'pdf']);
+export const exportEntityEnum = z.enum(['tickets', 'users']);
 
 export const exportFiltersSchema = z.object({
+  // tickets = talepler (varsayılan), users = kullanıcılar (yalnızca admin).
+  entity: exportEntityEnum.optional().default('tickets'),
   status: statusEnum.optional(),
   priority: priorityEnum.optional(),
   departmentId: z.string().uuid().optional(),
   tag: z.string().trim().max(30).optional(),
   search: z.string().trim().max(120).optional(),
+  role: roleEnum.optional(), // yalnızca users dışa aktarımı için
   // csv = backend yerel üretir; excel/pdf = file-service mikroservisi üretir.
   format: exportFormatEnum.optional().default('excel'),
 });
