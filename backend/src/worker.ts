@@ -4,24 +4,34 @@ import { BullAdapter } from '@bull-board/api/bullAdapter';
 import { ExpressAdapter } from '@bull-board/express';
 import {
   mailQueue,
+  bulkMailQueue,
   scheduleRepeatables,
   JOB_REPLY_EMAIL,
   JOB_DAILY_DIGEST,
   JOB_SLA_SWEEP,
   JOB_CSAT_REQUEST,
   JOB_EXPORT,
+  JOB_BULK_IMPORT,
+  JOB_WELCOME_EMAIL,
   type ReplyEmailJob,
   type ExportJob,
+  type BulkImportJob,
+  type WelcomeEmailJob,
 } from './queue';
 import { prisma } from './prisma';
+import { redis } from './redis';
 import {
   sendReplyEmail,
   sendDigestEmail,
   sendCsatEmail,
   sendExportEmail,
+  sendWelcomeEmail,
   isDeliverable,
   type DigestStats,
 } from './services/mailer';
+import { runImport } from './services/import';
+import { emitToRoom, rooms } from './realtime/emitter';
+import type { PreviewRow } from './services/import/types';
 import { runSlaSweep } from './services/slaSweep';
 import { refreshSlaTargets } from './services/sla';
 import { buildExportData, buildCsv, EXPORT_META } from './services/exportData';
@@ -134,6 +144,57 @@ mailQueue.process(JOB_EXPORT, async (job) => {
     await sendExportEmail(d.email, d.requestedByName, file, filename, count, contentType);
   }
   return { count, format, entity };
+});
+
+// ── Toplu import: önizleme veri setini işle (worker üzerinde) ─────────
+mailQueue.process(JOB_BULK_IMPORT, async (job) => {
+  const d = job.data as BulkImportJob;
+  const raw = await redis.get(`import:${d.importId}`);
+  if (!raw) throw new Error('Import önizlemesi bulunamadı (süresi dolmuş olabilir).');
+  const { rows } = JSON.parse(raw) as { rows: PreviewRow[] };
+  const total = rows.length;
+
+  emitToRoom(rooms.admin, 'import:progress', {
+    importId: d.importId,
+    entity: d.entity,
+    processed: 0,
+    total,
+    percent: 0,
+    created: 0,
+    updated: 0,
+    skipped: 0,
+    failed: 0,
+  });
+
+  const result = await runImport(d.entity, rows, d.strategy, (processed, tot, partial) => {
+    const percent = tot ? Math.round((processed / tot) * 100) : 100;
+    void job.progress(percent);
+    emitToRoom(rooms.admin, 'import:progress', {
+      importId: d.importId,
+      entity: d.entity,
+      processed,
+      total: tot,
+      percent,
+      created: partial.created,
+      updated: partial.updated,
+      skipped: partial.skipped,
+      failed: partial.failed,
+    });
+  });
+
+  emitToRoom(rooms.admin, 'import:done', { importId: d.importId, entity: d.entity, ...result });
+  await redis.del(`import:${d.importId}`);
+  console.log(
+    `📥 Import (${d.entity}): ${result.created} oluşturuldu, ${result.updated} güncellendi, ${result.skipped} atlandı, ${result.failed} hata`,
+  );
+  return { imported: result.created, updated: result.updated, skipped: result.skipped, failed: result.failed };
+});
+
+// Toplu hoşgeldin mailleri (ayrı kuyruk; interaktif mailleri boğmaz).
+bulkMailQueue.process(JOB_WELCOME_EMAIL, async (job) => {
+  const d = job.data as WelcomeEmailJob;
+  await sendWelcomeEmail(d.to, d.fullName, d.tempPassword);
+  return { sent: d.to };
 });
 
 // ── Operasyon dashboard'una canlı job telemetrisi ────────────────────

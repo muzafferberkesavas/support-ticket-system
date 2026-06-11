@@ -23,11 +23,28 @@ export interface ExportJob {
   filters: Record<string, string | undefined>;
 }
 
+// Toplu import job'u (worker üzerinde işlenir).
+export interface BulkImportJob {
+  importId: string; // Redis'teki önizleme veri seti anahtarı
+  entity: 'users' | 'tickets';
+  strategy: 'skip' | 'update' | 'createOnly';
+  requesterName: string;
+}
+
+// Toplu import sırasında oluşturulan kullanıcıların hoşgeldin maili.
+export interface WelcomeEmailJob {
+  to: string;
+  fullName: string | null;
+  tempPassword: string;
+}
+
 export const JOB_REPLY_EMAIL = 'reply-email';
 export const JOB_DAILY_DIGEST = 'daily-digest';
 export const JOB_SLA_SWEEP = 'sla-sweep';
 export const JOB_CSAT_REQUEST = 'csat-request';
 export const JOB_EXPORT = 'export-tickets';
+export const JOB_BULK_IMPORT = 'bulk-import';
+export const JOB_WELCOME_EMAIL = 'welcome-email';
 
 export const mailQueue = new Queue('mail', env.REDIS_URL, {
   // Sağlayıcı gönderim limitlerinin (Gmail ~500/gün) altında kalmak için rate limit.
@@ -36,6 +53,18 @@ export const mailQueue = new Queue('mail', env.REDIS_URL, {
     attempts: 3,
     backoff: { type: 'exponential', delay: 5000 },
     removeOnComplete: 100,
+    removeOnFail: 200,
+  },
+});
+
+// Toplu hoşgeldin mailleri için AYRI kuyruk + kendi limiter'ı. Böylece bir
+// import'taki yüzlerce mail, interaktif (reply/csat) mailleri geciktirmez.
+export const bulkMailQueue = new Queue('bulk-mail', env.REDIS_URL, {
+  limiter: { max: 20, duration: 60_000 },
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 5000 },
+    removeOnComplete: 200,
     removeOnFail: 200,
   },
 });
@@ -57,6 +86,17 @@ export function enqueueCsatRequest(ticketId: string) {
 // İstekten ayrılan ağır iş: CSV dışa aktarımı oluşturup e-posta ile gönder.
 export function enqueueExport(data: ExportJob) {
   return mailQueue.add(JOB_EXPORT, data);
+}
+
+// Toplu import işini worker'a devret. attempts:1 → job seviyesinde retry yok;
+// satırların iki kez işlenmesini/çift maili engeller (satır-içi try/catch yeterli).
+export function enqueueBulkImport(data: BulkImportJob) {
+  return mailQueue.add(JOB_BULK_IMPORT, data, { attempts: 1 });
+}
+
+// Import'ta oluşturulan kullanıcının hoşgeldin maili (ayrı kuyruk).
+export function enqueueWelcomeEmail(data: WelcomeEmailJob) {
+  return bulkMailQueue.add(JOB_WELCOME_EMAIL, data);
 }
 
 // Tekrarlanan cron job'larını kaydeder (worker açılışta çağırır).

@@ -6,9 +6,18 @@ import Tag from 'primevue/tag';
 import Message from 'primevue/message';
 import Button from 'primevue/button';
 import Select from 'primevue/select';
+import ProgressBar from 'primevue/progressbar';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
 import { useToast } from 'primevue/usetoast';
 import { useOperationsStore } from '@/stores/operations';
-import { operationsService, type ExportEntity, type ExportFormat } from '@/services/operations.service';
+import {
+  operationsService,
+  type ExportEntity,
+  type ExportFormat,
+  type ImportPreview,
+  type ImportStrategy,
+} from '@/services/operations.service';
 import { socketConnected, connectSocket } from '@/services/socket';
 import { extractErrorMessage } from '@/services/api';
 
@@ -55,6 +64,72 @@ async function emailExport() {
     });
   } finally {
     exportBusy.value = null;
+  }
+}
+
+// ── İçe aktarım (import) ─────────────────────────────────────────────
+const importEntity = ref<ExportEntity>('users');
+const importEntityOptions = [{ value: 'users', label: t('operations.export.users') }];
+const fileInput = ref<HTMLInputElement | null>(null);
+const selectedFile = ref<File | null>(null);
+const preview = ref<ImportPreview | null>(null);
+const strategy = ref<ImportStrategy>('skip');
+const previewing = ref(false);
+const confirming = ref(false);
+
+const strategyOptions = [
+  { value: 'skip', label: t('operations.import.strategy.skip') },
+  { value: 'update', label: t('operations.import.strategy.update') },
+  { value: 'createOnly', label: t('operations.import.strategy.createOnly') },
+];
+const statusSeverity: Record<string, string> = {
+  new: 'success',
+  exists: 'info',
+  duplicate: 'warn',
+  error: 'danger',
+};
+
+function onFile(e: Event) {
+  selectedFile.value = (e.target as HTMLInputElement).files?.[0] ?? null;
+  preview.value = null;
+  ops.resetImportProgress();
+}
+
+async function doPreview() {
+  if (!selectedFile.value) return;
+  previewing.value = true;
+  try {
+    preview.value = await operationsService.previewImport(importEntity.value, selectedFile.value);
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: t('operations.import.error'),
+      detail: extractErrorMessage(err),
+      life: 5000,
+    });
+  } finally {
+    previewing.value = false;
+  }
+}
+
+async function doConfirm() {
+  if (!preview.value) return;
+  confirming.value = true;
+  try {
+    await operationsService.confirmImport(preview.value.importId, strategy.value);
+    toast.add({ severity: 'success', summary: t('operations.import.started'), life: 3000 });
+    preview.value = null;
+    selectedFile.value = null;
+    if (fileInput.value) fileInput.value.value = '';
+  } catch (err) {
+    toast.add({
+      severity: 'error',
+      summary: t('operations.import.error'),
+      detail: extractErrorMessage(err),
+      life: 5000,
+    });
+  } finally {
+    confirming.value = false;
   }
 }
 
@@ -173,6 +248,83 @@ onMounted(async () => {
     </template>
   </Card>
 
+  <!-- İçe aktarım -->
+  <Card class="import-card">
+    <template #title>{{ t('operations.import.title') }}</template>
+    <template #content>
+      <p class="muted" style="margin-top: -0.4rem">{{ t('operations.import.subtitle') }}</p>
+      <div class="import-controls">
+        <Select
+          v-model="importEntity"
+          :options="importEntityOptions"
+          optionLabel="label"
+          optionValue="value"
+          class="export-entity"
+        />
+        <input ref="fileInput" type="file" accept=".csv,.xlsx,.xls" class="file-input" @change="onFile" />
+        <Button
+          :label="t('operations.import.preview')"
+          icon="pi pi-search"
+          :disabled="!selectedFile || previewing"
+          :loading="previewing"
+          @click="doPreview"
+        />
+      </div>
+
+      <!-- Önizleme (yazma yok) -->
+      <div v-if="preview" class="preview">
+        <div class="summary-chips">
+          <Tag :value="`${t('operations.import.summary.total')}: ${preview.summary.total}`" />
+          <Tag severity="success" :value="`${t('operations.import.status.new')}: ${preview.summary.new}`" />
+          <Tag severity="info" :value="`${t('operations.import.status.exists')}: ${preview.summary.exists}`" />
+          <Tag severity="warn" :value="`${t('operations.import.status.duplicate')}: ${preview.summary.duplicate}`" />
+          <Tag severity="danger" :value="`${t('operations.import.status.error')}: ${preview.summary.error}`" />
+        </div>
+
+        <DataTable :value="preview.rows" scrollable scrollHeight="320px" size="small" class="preview-table">
+          <Column field="index" header="#" style="width: 52px" />
+          <Column :header="t('operations.import.statusCol')" style="width: 120px">
+            <template #body="{ data }">
+              <Tag :severity="statusSeverity[data.status]" :value="t(`operations.import.status.${data.status}`)" />
+            </template>
+          </Column>
+          <Column v-for="col in preview.columns" :key="col" :header="col">
+            <template #body="{ data }">{{ data.display[col] }}</template>
+          </Column>
+          <Column :header="t('operations.import.errorsCol')">
+            <template #body="{ data }">
+              <span class="err">{{ data.errors.join('; ') }}</span>
+            </template>
+          </Column>
+        </DataTable>
+
+        <div class="confirm-row">
+          <span class="muted">{{ t('operations.import.strategyLabel') }}</span>
+          <Select v-model="strategy" :options="strategyOptions" optionLabel="label" optionValue="value" />
+          <Button :label="t('operations.import.confirm')" icon="pi pi-check" :loading="confirming" @click="doConfirm" />
+        </div>
+      </div>
+
+      <!-- Canlı ilerleme (worker'dan) -->
+      <div v-if="ops.importProgress" class="import-progress">
+        <ProgressBar :value="ops.importProgress.percent" />
+        <div class="progress-stats">
+          <span class="muted">{{ ops.importProgress.processed }}/{{ ops.importProgress.total }}</span>
+          <Tag severity="success" :value="`${t('operations.import.created')}: ${ops.importProgress.created}`" />
+          <Tag severity="info" :value="`${t('operations.import.updated')}: ${ops.importProgress.updated}`" />
+          <Tag :value="`${t('operations.import.skipped')}: ${ops.importProgress.skipped}`" />
+          <Tag severity="danger" :value="`${t('operations.import.failed')}: ${ops.importProgress.failed}`" />
+          <Tag
+            v-if="ops.importProgress.done"
+            severity="success"
+            icon="pi pi-check"
+            :value="t('operations.import.doneLabel')"
+          />
+        </div>
+      </div>
+    </template>
+  </Card>
+
   <!-- Son işlemler -->
   <Card class="recent">
     <template #title>{{ t('operations.recentTitle') }}</template>
@@ -230,6 +382,54 @@ onMounted(async () => {
 }
 .export-entity {
   min-width: 160px;
+}
+.import-card {
+  margin-bottom: 1.25rem;
+}
+.import-controls {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+.file-input {
+  flex: 1;
+  min-width: 200px;
+  font-size: 0.9rem;
+}
+.preview {
+  margin-top: 1rem;
+}
+.summary-chips {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+.preview-table {
+  font-size: 0.85rem;
+}
+.err {
+  color: #dc2626;
+  font-size: 0.8rem;
+}
+.confirm-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  margin-top: 0.85rem;
+  flex-wrap: wrap;
+}
+.import-progress {
+  margin-top: 1rem;
+}
+.progress-stats {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 0.5rem;
 }
 .stat-row {
   display: flex;

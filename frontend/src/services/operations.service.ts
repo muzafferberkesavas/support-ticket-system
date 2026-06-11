@@ -48,4 +48,61 @@ export const operationsService = {
   async exportByEmail(entity: ExportEntity, format: ExportFormat): Promise<void> {
     await api.post('/jobs/export', { entity, format });
   },
+
+  // ── Toplu içe aktarım (import) ─────────────────────────────────────
+  // Dosyayı yükler, önizleme döner (HİÇBİR ŞEY YAZILMAZ).
+  async previewImport(entity: ExportEntity, file: File): Promise<ImportPreview> {
+    const fd = new FormData();
+    fd.append('file', file);
+    const { data } = await api.post<ImportPreview>(`/imports/${entity}`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
+  },
+
+  // Onaydan sonra içe aktarımı worker'a devreder.
+  async confirmImport(importId: string, strategy: ImportStrategy): Promise<{ enqueued: boolean; jobId: string }> {
+    const { data } = await api.post<{ enqueued: boolean; jobId: string }>(`/imports/${importId}/confirm`, { strategy });
+    return data;
+  },
 };
+
+export type ImportRowStatus = 'new' | 'exists' | 'duplicate' | 'error';
+export type ImportStrategy = 'skip' | 'update' | 'createOnly';
+
+export interface ImportPreviewRow {
+  index: number;
+  status: ImportRowStatus;
+  errors: string[];
+  display: Record<string, string>;
+}
+
+export interface ImportPreviewSummary {
+  total: number;
+  new: number;
+  exists: number;
+  duplicate: number;
+  error: number;
+}
+
+export interface ImportPreview {
+  importId: string;
+  entity: ExportEntity;
+  columns: string[];
+  summary: ImportPreviewSummary;
+  rows: ImportPreviewRow[];
+}
+
+// Worker'dan gelen canlı ilerleme (socket 'import:progress'/'import:done').
+export interface ImportProgress {
+  importId: string;
+  entity: string;
+  processed: number;
+  total: number;
+  percent: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  failed: number;
+  done?: boolean;
+}

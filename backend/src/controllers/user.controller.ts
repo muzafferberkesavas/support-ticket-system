@@ -1,11 +1,11 @@
 import { Request, Response } from 'express';
-import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma';
 import { AppError } from '../utils/AppError';
 import { createUserSchema, listUsersQuerySchema, updateUserSchema } from '../schemas';
 import { sendWelcomeEmail } from '../services/mailer';
+import { generateTempPassword } from '../utils/password';
 
 const userSelect = {
   id: true,
@@ -17,15 +17,6 @@ const userSelect = {
   memberships: { include: { department: { select: { id: true, name: true } } } },
   _count: { select: { tickets: true, assignments: true } },
 };
-
-// Yeni oluşturulan bir hesap için okunabilir geçici parola.
-function generateTempPassword(): string {
-  const base = crypto
-    .randomBytes(9)
-    .toString('base64')
-    .replace(/[^a-zA-Z0-9]/g, '');
-  return `${base.slice(0, 8)}9!`;
-}
 
 async function assertDepartmentsExist(departmentIds: string[]): Promise<void> {
   if (!departmentIds.length) return;
