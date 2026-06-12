@@ -48,3 +48,25 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.image }}:${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+  # CD: imajlar GHCR'a gidince VM'deki self-hosted runner k3s'i yeni :<sha>
+  # imajlarına geçirir (rollout). Runner kümenin içinde olduğu için yerel
+  # cluster'a erişir; bulut runner'ları yerel VM'e ulaşamazdı.
+  deploy:
+    needs: build
+    runs-on: [self-hosted, k3s]
+    steps:
+      - name: k3s rollout (yeni imajlar)
+        run: |
+          set -e
+          SHA=${{ github.sha }}
+          REG=ghcr.io/${{ env.OWNER }}
+          K="sudo k3s kubectl -n support"
+          $K set image deployment/backend       backend=$REG/support-backend:$SHA
+          $K set image deployment/worker        worker=$REG/support-backend:$SHA
+          $K set image deployment/file-service  file-service=$REG/support-file-service:$SHA
+          $K set image deployment/frontend      frontend=$REG/support-frontend:$SHA
+          for d in backend worker file-service frontend; do
+            $K rollout status deployment/$d --timeout=180s
+          done
+          echo "✓ k3s güncellendi (sha: $SHA)"
