@@ -1,0 +1,48 @@
+# Gizli olmayan ortam değişkenleri (docker-compose .env karşılığı).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: support
+data:
+  NODE_ENV: production
+  PORT: '3000'
+  # Servisler küme içinde servis adıyla haberleşir.
+  DATABASE_URL: postgresql://postgres:postgres@postgres:5432/support_db
+  REDIS_URL: redis://redis:6379
+  FILE_SERVICE_URL: http://file-service:4000
+  # Tarayıcı ile API aynı origin (ingress /api) → CORS gevşek (origin yansıtılır).
+  CORS_ORIGIN: '*'
+  APP_URL: http://192.168.64.3
+  UPLOAD_DIR: /app/uploads
+  MAX_UPLOAD_MB: '10'
+  DIGEST_CRON: '0 8 * * *'
+  SLA_SWEEP_CRON: '*/2 * * * *'
+  STALE_TICKET_DAYS: '3'
+  CSAT_DELAY_MS: '3600000'
+  BULLBOARD_PORT: '3001'
+  SMTP_HOST: smtp.gmail.com
+  SMTP_PORT: '587'
+  SMTP_SECURE: 'false'
+  MAIL_FROM: Destek Merkezi <no-reply@support.local>
+  # Postgres konteyneri için
+  POSTGRES_USER: postgres
+  POSTGRES_DB: support_db
+---
+# Gizli bilgiler. (Yerel/dev değerleri; gerçek ortamda değiştirin.)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secret
+  namespace: support
+type: Opaque
+stringData:
+  JWT_SECRET: super_secret_dev_key_change_me
+  ADMIN_EMAIL: admin@support.local
+  ADMIN_PASSWORD: Admin123!
+  BULLBOARD_USER: admin
+  BULLBOARD_PASS: Admin123!
+  FILE_SERVICE_TOKEN: ''
+  SMTP_USER: ''
+  SMTP_PASS: ''
+  POSTGRES_PASSWORD: postgres

@@ -1,0 +1,5 @@
+# Tüm uygulama kaynakları bu namespace altında toplanır.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: support

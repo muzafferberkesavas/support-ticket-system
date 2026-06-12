@@ -1,0 +1,37 @@
+# Dosya üretim mikroservisi (Excel/PDF) — DB bağlantısı yok.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: file-service
+  namespace: support
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: file-service }
+  template:
+    metadata:
+      labels: { app: file-service }
+    spec:
+      containers:
+        - name: file-service
+          image: ghcr.io/muzafferberkesavas/support-file-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 4000
+          env:
+            - { name: PORT, value: '4000' }
+            - { name: FILE_SERVICE_TOKEN, valueFrom: { secretKeyRef: { name: app-secret, key: FILE_SERVICE_TOKEN } } }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 4000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: file-service
+  namespace: support
+spec:
+  selector: { app: file-service }
+  ports:
+    - { port: 4000, targetPort: 4000 }

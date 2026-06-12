@@ -1,0 +1,39 @@
+# Worker — Bull tüketici (e-posta, SLA cron, dışa aktarım, toplu import).
+# Backend ile AYNI imaj; sadece farklı komut (worker entrypoint).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: support
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: worker }
+  template:
+    metadata:
+      labels: { app: worker }
+    spec:
+      initContainers:
+        - name: wait-deps
+          image: busybox:1.36
+          command: [sh, -c, 'until nc -z postgres 5432 && nc -z redis 6379; do echo "deps bekleniyor..."; sleep 2; done']
+      containers:
+        - name: worker
+          image: ghcr.io/muzafferberkesavas/support-backend:latest
+          imagePullPolicy: IfNotPresent
+          command: ['node', 'dist/worker.js']
+          ports:
+            - containerPort: 3001 # Bull Board
+          envFrom:
+            - configMapRef: { name: app-config }
+            - secretRef: { name: app-secret }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker
+  namespace: support
+spec:
+  selector: { app: worker }
+  ports:
+    - { port: 3001, targetPort: 3001 } # Bull Board (kuyruk panosu)
