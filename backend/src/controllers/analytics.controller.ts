@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma';
 import { getUserDepartmentIds, type Principal } from '../services/access';
-import { analyzeThemes } from '../services/textAnalysis';
+import { analyzeRecurring } from '../services/ticketAnalysis';
 import { getSlaTargets } from '../services/sla';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -143,10 +143,13 @@ export async function getAnalytics(req: Request, res: Response): Promise<void> {
     })
     .sort((a, b) => b.resolved - a.resolved || b.assigned - a.assigned);
 
-  // ── Tekrar eden problemler (metin analizi) ─────────────────────────
-  const recurringProblems = analyzeThemes(
+  // ── Tekrar eden problemler (LLM analizi · günlük cache · NLP fallback) ──
+  const scopeKey = user.role === 'admin' ? 'all' : (scopeDeptIds ?? []).slice().sort().join(',') || 'none';
+  const force = req.query.refresh === '1' || req.query.refresh === 'true';
+  const recurring = await analyzeRecurring(
     tickets.map((t) => ({ subject: t.subject, message: t.message, category: t.category, userId: t.userId })),
     6,
+    { scopeKey, force },
   );
 
   res.json({
@@ -170,6 +173,7 @@ export async function getAnalytics(req: Request, res: Response): Promise<void> {
     byDepartment,
     ticketsOverTime,
     agentPerformance,
-    recurringProblems,
+    recurringProblems: recurring.themes,
+    recurringMeta: { provider: recurring.provider, generatedAt: recurring.generatedAt, cached: recurring.cached },
   });
 }

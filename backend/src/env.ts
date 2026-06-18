@@ -28,6 +28,11 @@ const envSchema = z.object({
   // Dosya üretim mikroservisi (Excel/PDF). Backend bu URL'ye istek atar; DB'si yok.
   FILE_SERVICE_URL: z.string().default('http://file-service:4000'),
   FILE_SERVICE_TOKEN: z.string().optional().default(''),
+  // Talep analizi (tekrar eden problemler) — LLM tabanlı analiz.
+  // ANTHROPIC_API_KEY boşsa otomatik olarak yerel NLP analizine düşülür.
+  ANTHROPIC_API_KEY: z.string().optional().default(''),
+  ANTHROPIC_MODEL: z.string().default('claude-haiku-4-5'),
+  ANALYSIS_PROVIDER: z.enum(['auto', 'anthropic', 'nlp']).default('auto'),
   // Worker: günlük özet (digest) job'ının cron zamanlaması (varsayılan her gün 08:00).
   DIGEST_CRON: z.string().default('0 8 * * *'),
   // Worker: SLA otomatik yükseltme + bekleyen talep hatırlatma taraması (sweep) cron'u (varsayılan her 2 dk).
