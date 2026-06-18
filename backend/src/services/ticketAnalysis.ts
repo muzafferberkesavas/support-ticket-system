@@ -109,7 +109,8 @@ async function anthropicThemes(items: AnalysisInput[], limit: number): Promise<R
 
   const resp = await client().messages.create({
     model: env.ANTHROPIC_MODEL,
-    max_tokens: 1500,
+    // Çok talepte tema başına çok sayıda ticketIndices döner → yanıtın kesilmemesi için yüksek tut.
+    max_tokens: 4096,
     system: SYSTEM,
     tools: [TOOL],
     tool_choice: { type: 'tool', name: TOOL.name },

@@ -64,6 +64,7 @@ async function main() {
 
   // ── Zengin demo veri seti (bir kez çalışır; marker kullanıcıyla korunur) ────────
   await generateDemoData(departments);
+  await generateMoreDemoData(departments);
   await seedExtras();
 }
 
@@ -261,6 +262,128 @@ async function generateDemoData(departments: Map<string, string>) {
     }
   }
   console.log(`✅ Demo dataset generated: ${created} tickets (musteri1..10@firma.com / User123!)`);
+}
+
+const pick = <T>(arr: T[]): T => arr[randInt(0, arr.length - 1)];
+
+// İkinci, daha büyük demo set (v2 marker) — LLM tekrar-eden-problem analizi için
+// VARYASYONLU ifadelerle bol veri. Aynı temayı farklı cümlelerle yazar ki analiz
+// (NLP/Claude) gerçekçi biçimde gruplasın. generateDemoData'nın üstüne eklenir.
+async function generateMoreDemoData(departments: Map<string, string>) {
+  const MARKER = 'demo.seed.v2@support.local';
+  if (await prisma.user.findUnique({ where: { email: MARKER } })) return;
+  await prisma.user.create({
+    data: { email: MARKER, password: await bcrypt.hash('marker', 10), role: 'user', fullName: 'seed marker v2' },
+  });
+
+  const custHash = await bcrypt.hash('User123!', 10);
+  const moreNames = [
+    'Deniz Acar', 'Gül Erdoğan', 'Okan Polat', 'Sibel Aydın', 'Murat Şen',
+    'Pınar Korkmaz', 'Tolga Aslan', 'Derya Çetin', 'Kaan Yalçın', 'Ebru Taş',
+    'Serkan Bulut', 'Nazlı Güneş', 'Onur Kılıç', 'Yasemin Ak', 'Barış Tunç',
+    'Melis Doğan', 'Hakan Eren', 'Ceren Öz', 'Volkan Kaya', 'İrem Sezer',
+  ];
+  const customers: string[] = [];
+  for (let i = 0; i < moreNames.length; i++) {
+    const email = `musteri${i + 11}@firma.com`;
+    const u = await prisma.user.upsert({
+      where: { email },
+      update: {},
+      create: { email, password: custHash, role: 'user', fullName: moreNames[i] },
+    });
+    customers.push(u.id);
+  }
+
+  const agents = await prisma.user.findMany({
+    where: { email: { in: ['tech.agent@support.local', 'tech.lead@support.local', 'billing.agent@support.local'] } },
+    select: { id: true, email: true },
+  });
+  const techAgents = agents.filter((a) => a.email.startsWith('tech')).map((a) => a.id);
+  const billingAgents = agents.filter((a) => a.email.startsWith('billing')).map((a) => a.id);
+  const tech = departments.get('Teknik Destek')!;
+  const billing = departments.get('Faturalama')!;
+
+  type Theme = { dept: string; agents: string[]; priority: Priority; n: number; subjects: string[]; messages: string[] };
+  const themes: Theme[] = [
+    { dept: tech, agents: techAgents, priority: 'low', n: 9,
+      subjects: ['Mouse arızalı', 'Fare çalışmıyor', 'Yeni mouse talebi', 'Mouse bozuldu'],
+      messages: ['Mouse aniden çalışmayı bıraktı, imleç hareket etmiyor.', 'Faremin sol tuşu basmıyor, yeni bir tane rica ediyorum.', 'Mouse tekliyor ve sürekli donuyor, değişim gerekiyor.'] },
+    { dept: tech, agents: techAgents, priority: 'high', n: 9,
+      subjects: ['VPN bağlanmıyor', 'VPN sürekli kopuyor', 'Uzaktan erişim sorunu', 'VPN hatası alıyorum'],
+      messages: ['Evden çalışırken VPN bağlantısı kuramıyorum, hata veriyor.', 'VPN birkaç dakikada bir kopuyor, çalışamıyorum. Acil.', 'Uzaktan bağlantı çok yavaş ve sürekli düşüyor.'] },
+    { dept: tech, agents: techAgents, priority: 'medium', n: 8,
+      subjects: ['Yazıcı çalışmıyor', 'Toner hatası', 'Çıktı alamıyorum', 'Yazıcı kağıt sıkıştırıyor'],
+      messages: ['Ofis yazıcısı toner hatası veriyor, baskı alamıyorum.', 'Yazıcıdan çıktı gelmiyor, kuyrukta takılıyor.', 'Toner bitti uyarısı var ama yeni toner taktım yine çalışmıyor.'] },
+    { dept: tech, agents: techAgents, priority: 'medium', n: 7,
+      subjects: ['Outlook açılmıyor', 'E-posta gelmiyor', 'Mail senkron sorunu', 'Outlook donuyor'],
+      messages: ['Outlook açılışta donuyor, e-postalarıma erişemiyorum.', 'Yeni mailler gelmiyor, senkronizasyon takılı.', 'Gönderilen kutusunda mailler takılıp gitmiyor.'] },
+    { dept: tech, agents: techAgents, priority: 'high', n: 8,
+      subjects: ['Şifremi unuttum', 'Parola sıfırlama', 'Hesabım kilitlendi', 'Giriş yapamıyorum'],
+      messages: ['Sisteme giriş yapamıyorum, şifremi unuttum, sıfırlama rica ederim.', 'Hesabım çok fazla deneme yüzünden kilitlendi.', 'Parolam çalışmıyor, sıfırlama bağlantısı gelmedi.'] },
+    { dept: tech, agents: techAgents, priority: 'low', n: 6,
+      subjects: ['Klavye tuşları takılıyor', 'Klavye bozuk', 'Bazı tuşlar çalışmıyor'],
+      messages: ['Klavyede bazı tuşlar basmıyor, yeni klavye gerekli.', 'Klavye tuşları takılıyor, yazarken harf atlıyor.', 'Klavyem ıslandı, tuşlar çalışmıyor.'] },
+    { dept: tech, agents: techAgents, priority: 'medium', n: 6,
+      subjects: ['Bilgisayar çok yavaş', 'Sistem donuyor', 'Açılış çok uzun sürüyor'],
+      messages: ['Bilgisayar son günlerde aşırı yavaşladı, sürekli donuyor.', 'Açılış 10 dakika sürüyor, çalışamıyorum.', 'Programlar geç açılıyor ve takılıyor.'] },
+    { dept: tech, agents: techAgents, priority: 'medium', n: 6,
+      subjects: ['Monitör açılmıyor', 'Ekran titriyor', 'İkinci monitör talebi'],
+      messages: ['Monitör sinyal almıyor, ekran siyah kalıyor.', 'Ekran sürekli titriyor, gözüm yoruluyor.', 'İkinci bir monitör talep ediyorum, verimlilik için.'] },
+    { dept: tech, agents: techAgents, priority: 'medium', n: 6,
+      subjects: ['Program kurulumu', 'Office kurulumu', 'Yazılım lisansı', 'Uygulama yüklenmiyor'],
+      messages: ['İhtiyacım olan programı kuramıyorum, yetki hatası veriyor.', 'Office lisansı süresi dolmuş, yenilenmesi gerekiyor.', 'Uygulama kurulumu yarıda hata verip duruyor.'] },
+    { dept: tech, agents: techAgents, priority: 'low', n: 5,
+      subjects: ['WiFi bağlanmıyor', 'İnternet yok', 'Ağ çok yavaş'],
+      messages: ['Ofiste WiFi’ye bağlanamıyorum, internet gitti.', 'Kablosuz ağ sürekli kopuyor.', 'İnternet bağlantısı çok yavaş, sayfalar açılmıyor.'] },
+    { dept: tech, agents: techAgents, priority: 'medium', n: 5,
+      subjects: ['Klasör erişim yetkisi', 'Paylaşıma erişemiyorum', 'Sisteme erişim talebi'],
+      messages: ['Ortak klasöre erişim yetkim yok, açılması gerekiyor.', 'Paylaşılan sürücüye bağlanamıyorum, erişim reddedildi.', 'Yeni başladım, sistemlere erişim yetkisi rica ederim.'] },
+    { dept: billing, agents: billingAgents, priority: 'medium', n: 7,
+      subjects: ['Fatura tutarı hatalı', 'Fazladan ücret', 'Fatura gelmedi', 'Çift fatura kesildi'],
+      messages: ['Bu ayki faturada fazladan ücret var, kontrol eder misiniz?', 'Faturam hâlâ gelmedi, ödeme yapamıyorum.', 'Aynı dönem için iki fatura kesilmiş, iade rica ederim.'] },
+    { dept: billing, agents: billingAgents, priority: 'low', n: 5,
+      subjects: ['Abonelik iptali', 'Plan değişikliği', 'Abonelik yenileme'],
+      messages: ['Aboneliğimi iptal etmek istiyorum, süreç nedir?', 'Daha üst bir plana geçmek istiyorum.', 'Aboneliğim yenilenmedi, hizmet durdu.'] },
+  ];
+
+  let custIdx = 0;
+  let created = 0;
+  for (const th of themes) {
+    for (let i = 0; i < th.n; i++) {
+      const requester = customers[custIdx % customers.length];
+      custIdx += 1;
+      const createdAt = new Date(Date.now() - randInt(0, 27) * DAY_MS - randInt(0, 23) * 3600_000);
+      const roll = Math.random();
+      const status: Status = roll < 0.4 ? 'closed' : roll < 0.75 ? 'in_progress' : 'open';
+      const assignee = th.agents.length ? th.agents[randInt(0, th.agents.length - 1)] : null;
+      const escalated = th.priority === 'high' && Math.random() < 0.3;
+
+      let firstResponseAt: Date | null = null;
+      let resolvedAt: Date | null = null;
+      if (status !== 'open') {
+        firstResponseAt = new Date(createdAt.getTime() + randInt(20, 480) * 60_000);
+        if (status === 'closed') resolvedAt = new Date(firstResponseAt.getTime() + randInt(60, 2880) * 60_000);
+      }
+
+      await prisma.ticket.create({
+        data: {
+          subject: pick(th.subjects),
+          message: pick(th.messages),
+          priority: th.priority,
+          status,
+          escalated,
+          departmentId: th.dept,
+          userId: requester,
+          createdAt,
+          firstResponseAt,
+          resolvedAt,
+          assignees: assignee ? { create: [{ userId: assignee }] } : undefined,
+        },
+      });
+      created += 1;
+    }
+  }
+  console.log(`✅ Genişletilmiş demo set: +${created} talep (musteri11..30@firma.com / User123!)`);
 }
 
 main()
