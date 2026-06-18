@@ -22,6 +22,17 @@ const ALLOWED = new Set([
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  // Sesli not (mobil ses kaydı) — m4a/aac/mp3/wav/ogg/3gp/webm.
+  'audio/mp4',
+  'audio/m4a',
+  'audio/x-m4a',
+  'audio/aac',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/x-wav',
+  'audio/ogg',
+  'audio/3gpp',
+  'audio/webm',
 ]);
 
 const storage = multer.diskStorage({
