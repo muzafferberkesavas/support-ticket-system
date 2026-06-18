@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: support_db
     ports:
-      - "5432:5432"
+      - "55432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -22,7 +22,7 @@ services:
     container_name: support_redis
     restart: unless-stopped
     ports:
-      - "6379:6379"
+      - "56379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -55,10 +55,14 @@ services:
       DIGEST_CRON: ${DIGEST_CRON}
       FILE_SERVICE_URL: ${FILE_SERVICE_URL}
       FILE_SERVICE_TOKEN: ${FILE_SERVICE_TOKEN}
+      # Talep analizi (tekrar eden problemler) — LLM tabanlı. Boşsa NLP'ye düşer.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-haiku-4-5}
+      ANALYSIS_PROVIDER: ${ANALYSIS_PROVIDER:-auto}
     volumes:
       - uploads:/app/uploads
     ports:
-      - "3000:3000"
+      - "3100:3000"
     depends_on:
       postgres:
         condition: service_healthy

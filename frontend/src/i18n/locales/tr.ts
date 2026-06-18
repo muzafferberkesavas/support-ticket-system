@@ -150,6 +150,9 @@ export default {
       occurrences: '{count} talep',
       requesters: '{count} farklı kişi',
       samplesTitle: 'Örnek talepler',
+      reanalyze: 'Yeniden Analiz Et',
+      cached: 'önbellekten',
+      by: { anthropic: 'Claude ile üretildi', nlp: 'Yerel analiz' },
       kind: {
         hardware: 'Donanım / Temin',
         recurring: 'Tekrarlayan',

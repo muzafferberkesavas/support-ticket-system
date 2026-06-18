@@ -9,6 +9,13 @@ export interface RecurringTheme {
   distinctRequesters: number;
   sampleSubjects: string[];
   kind: ThemeKind;
+  suggestion?: string; // LLM sağlayıcıda dolu; varsa şablon öneri yerine bu gösterilir
+}
+
+export interface RecurringMeta {
+  provider: 'anthropic' | 'nlp';
+  generatedAt: string;
+  cached: boolean;
 }
 
 export interface AgentPerformance {
@@ -42,11 +49,15 @@ export interface Analytics {
   ticketsOverTime: { date: string; count: number }[];
   agentPerformance: AgentPerformance[];
   recurringProblems: RecurringTheme[];
+  recurringMeta?: RecurringMeta;
 }
 
 export const analyticsService = {
-  async get(): Promise<Analytics> {
-    const { data } = await api.get<Analytics>('/analytics');
+  // refresh=true → tekrar eden problem analizini yeniden çalıştırır (günlük cache'i atlar).
+  async get(opts?: { refresh?: boolean }): Promise<Analytics> {
+    const { data } = await api.get<Analytics>('/analytics', {
+      params: opts?.refresh ? { refresh: 1 } : {},
+    });
     return data;
   },
 };

@@ -24,6 +24,7 @@ const auth = useAuthStore();
 
 const data = ref<Analytics | null>(null);
 const loading = ref(true);
+const reanalyzing = ref(false);
 const loadError = ref('');
 
 const textColor = computed(() => (ui.isDark ? '#9aa3b2' : '#6b7280'));
@@ -139,6 +140,7 @@ const kindSeverity: Record<string, string> = {
   general: 'secondary',
 };
 function recommendation(theme: RecurringTheme): string {
+  if (theme.suggestion) return theme.suggestion; // LLM önerisi varsa onu göster
   return t(`analytics.recurring.rec.${theme.kind}`, {
     term: theme.term,
     count: theme.count,
@@ -146,15 +148,17 @@ function recommendation(theme: RecurringTheme): string {
   });
 }
 
-async function load() {
-  loading.value = true;
+async function load(refresh = false) {
+  if (refresh) reanalyzing.value = true;
+  else loading.value = true;
   loadError.value = '';
   try {
-    data.value = await analyticsService.get();
+    data.value = await analyticsService.get({ refresh });
   } catch (err) {
     loadError.value = extractErrorMessage(err);
   } finally {
     loading.value = false;
+    reanalyzing.value = false;
   }
 }
 
@@ -407,8 +411,25 @@ onMounted(load);
 
     <!-- Recurring problems -->
     <div class="section-card">
-      <h3 class="chart-title"><i class="pi pi-lightbulb" /> {{ t('analytics.recurring.title') }}</h3>
-      <p class="muted" style="margin-top: -0.4rem">{{ t('analytics.recurring.subtitle') }}</p>
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap">
+        <div>
+          <h3 class="chart-title"><i class="pi pi-lightbulb" /> {{ t('analytics.recurring.title') }}</h3>
+          <p class="muted" style="margin-top: -0.4rem">{{ t('analytics.recurring.subtitle') }}</p>
+        </div>
+        <Button
+          :label="t('analytics.recurring.reanalyze')"
+          icon="pi pi-sparkles"
+          size="small"
+          :loading="reanalyzing"
+          @click="load(true)"
+        />
+      </div>
+      <p v-if="data.recurringMeta" class="muted" style="margin-top: 0.1rem; font-size: 0.82rem">
+        <i :class="data.recurringMeta.provider === 'anthropic' ? 'pi pi-sparkles' : 'pi pi-hashtag'" />
+        {{ t(`analytics.recurring.by.${data.recurringMeta.provider}`) }} ·
+        {{ new Date(data.recurringMeta.generatedAt).toLocaleString(ui.locale === 'en' ? 'en-GB' : 'tr-TR') }}
+        <span v-if="data.recurringMeta.cached"> · {{ t('analytics.recurring.cached') }}</span>
+      </p>
 
       <div v-if="!data.recurringProblems.length" class="empty-state">
         <i class="pi pi-search" />
