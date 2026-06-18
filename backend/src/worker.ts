@@ -13,6 +13,7 @@ import {
   JOB_EXPORT,
   JOB_BULK_IMPORT,
   JOB_WELCOME_EMAIL,
+  JOB_WEEKLY_INSIGHTS,
   type ReplyEmailJob,
   type ExportJob,
   type BulkImportJob,
@@ -26,9 +27,11 @@ import {
   sendCsatEmail,
   sendExportEmail,
   sendWelcomeEmail,
+  sendInsightsEmail,
   isDeliverable,
   type DigestStats,
 } from './services/mailer';
+import { analyzeRecurring } from './services/ticketAnalysis';
 import { runImport } from './services/import';
 import { emitToRoom, rooms } from './realtime/emitter';
 import type { PreviewRow } from './services/import/types';
@@ -94,6 +97,33 @@ mailQueue.process(JOB_DAILY_DIGEST, async () => {
   for (const d of digests) await sendDigestEmail(d.to, d.name, d.stats);
   console.log(`📨 Daily digest sent to ${digests.length} recipient(s)`);
   return { sent: digests.length };
+});
+
+// Haftalık içgörü: son talepleri Claude (Haiku) ile analiz edip tekrar eden
+// problemleri + önerileri yöneticilere (admin/team_lead) e-posta ile gönderir.
+mailQueue.process(JOB_WEEKLY_INSIGHTS, async () => {
+  const tickets = await prisma.ticket.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: 400,
+    select: { subject: true, message: true, category: true, userId: true },
+  });
+  const { themes, provider } = await analyzeRecurring(
+    tickets.map((t) => ({ subject: t.subject, message: t.message, category: t.category, userId: t.userId })),
+    8,
+    { scopeKey: 'weekly-insights', force: true },
+  );
+  const managers = await prisma.user.findMany({
+    where: { role: { in: ['admin', 'team_lead'] } },
+    select: { email: true, fullName: true },
+  });
+  let sent = 0;
+  for (const m of managers) {
+    if (!isDeliverable(m.email)) continue;
+    await sendInsightsEmail(m.email, m.fullName, themes, provider);
+    sent += 1;
+  }
+  console.log(`📊 Weekly insights sent to ${sent} manager(s) [provider=${provider}, themes=${themes.length}]`);
+  return { sent, themes: themes.length, provider };
 });
 
 mailQueue.process(JOB_SLA_SWEEP, async () => {

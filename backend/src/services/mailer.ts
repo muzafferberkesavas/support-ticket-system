@@ -125,6 +125,38 @@ export async function sendDigestEmail(to: string, name: string | null, stats: Di
   await send(to, 'Destek Merkezi — Günlük Özet', html);
 }
 
+// Haftalık içgörü: tekrar eden problemler + (varsa) LLM önerileri → yöneticilere.
+export async function sendInsightsEmail(
+  to: string,
+  name: string | null,
+  themes: { term: string; count: number; distinctRequesters: number; kind: string; suggestion?: string }[],
+  provider: 'anthropic' | 'nlp',
+): Promise<void> {
+  const esc = (s: string) =>
+    s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string);
+  const card = (th: (typeof themes)[number]) =>
+    `<div style="margin:0 0 12px;padding:14px 16px;background:#f9fafb;border-radius:10px;border-left:3px solid #6366f1">
+       <div style="font-weight:700;color:#1f2433">${esc(th.term)}
+         <span style="color:#6b7280;font-weight:500;font-size:13px"> · ${th.count} talep · ${th.distinctRequesters} kişi</span></div>
+       ${th.suggestion ? `<div style="margin-top:6px;color:#374151;line-height:1.5">💡 ${esc(th.suggestion)}</div>` : ''}
+     </div>`;
+  const body = themes.length
+    ? themes.map(card).join('')
+    : '<p style="color:#374151">Bu dönem anlamlı bir tekrar tespit edilmedi.</p>';
+  const note =
+    provider === 'anthropic'
+      ? 'Bu analiz Claude (yapay zekâ) ile üretildi.'
+      : 'Bu analiz yerel metin analizi ile üretildi.';
+  const html = layout(
+    `Haftalık İçgörü${name ? ', ' + name : ''}`,
+    `<p style="color:#374151;line-height:1.6">Son talepler analiz edildi. Tekrar eden problemler ve önerilen aksiyonlar:</p>
+     ${body}
+     <p style="margin:18px 0">${btn(env.APP_URL + '/analytics', 'Analiz Ekranını Aç')}</p>
+     <p style="color:#9ca3af;font-size:12px">${note}</p>`,
+  );
+  await send(to, 'Destek Merkezi — Haftalık İçgörü (Tekrar Eden Problemler)', html);
+}
+
 export async function sendCsatEmail(to: string, ticketId: string, ticketSubject: string): Promise<void> {
   const html = layout(
     'Talebiniz çözüldü — değerlendirir misiniz?',

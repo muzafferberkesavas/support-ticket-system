@@ -37,6 +37,8 @@ const envSchema = z.object({
   DIGEST_CRON: z.string().default('0 8 * * *'),
   // Worker: SLA otomatik yükseltme + bekleyen talep hatırlatma taraması (sweep) cron'u (varsayılan her 2 dk).
   SLA_SWEEP_CRON: z.string().default('*/2 * * * *'),
+  // Worker: haftalık içgörü (tekrar eden problemler) e-postası cron'u (varsayılan Pazartesi 08:00).
+  WEEKLY_INSIGHTS_CRON: z.string().default('0 8 * * 1'),
   STALE_TICKET_DAYS: z.coerce.number().default(3),
   // Talep kapandıktan sonra CSAT anketi e-postasının gönderilmesinden önceki gecikme (ms; varsayılan 1 saat).
   CSAT_DELAY_MS: z.coerce.number().default(3_600_000),

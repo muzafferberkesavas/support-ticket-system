@@ -45,6 +45,7 @@ export const JOB_CSAT_REQUEST = 'csat-request';
 export const JOB_EXPORT = 'export-tickets';
 export const JOB_BULK_IMPORT = 'bulk-import';
 export const JOB_WELCOME_EMAIL = 'welcome-email';
+export const JOB_WEEKLY_INSIGHTS = 'weekly-insights';
 
 export const mailQueue = new Queue('mail', env.REDIS_URL, {
   // Sağlayıcı gönderim limitlerinin (Gmail ~500/gün) altında kalmak için rate limit.
@@ -78,6 +79,11 @@ export function enqueueDigestNow() {
   return mailQueue.add(JOB_DAILY_DIGEST, { manual: true });
 }
 
+// Haftalık içgörü (tekrar eden problemler) e-postasını hemen tetikler (manuel/test).
+export function enqueueWeeklyInsightsNow() {
+  return mailQueue.add(JOB_WEEKLY_INSIGHTS, { manual: true });
+}
+
 // Gecikmeli job: CSAT anketi e-postası, talep kapandıktan CSAT_DELAY_MS sonra gönderilir.
 export function enqueueCsatRequest(ticketId: string) {
   return mailQueue.add(JOB_CSAT_REQUEST, { ticketId }, { delay: env.CSAT_DELAY_MS });
@@ -106,4 +112,5 @@ export async function scheduleRepeatables(): Promise<void> {
   await Promise.all(existing.map((r) => mailQueue.removeRepeatableByKey(r.key)));
   await mailQueue.add(JOB_DAILY_DIGEST, {}, { repeat: { cron: env.DIGEST_CRON } });
   await mailQueue.add(JOB_SLA_SWEEP, {}, { repeat: { cron: env.SLA_SWEEP_CRON } });
+  await mailQueue.add(JOB_WEEKLY_INSIGHTS, {}, { repeat: { cron: env.WEEKLY_INSIGHTS_CRON } });
 }
